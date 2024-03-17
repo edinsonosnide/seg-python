@@ -26,6 +26,7 @@ class App(customtkinter.CTk):
         self.image_showing_path = "./images/canvas.png" # image showing on canvas
         self.current_data = None # nifti file loaded and gotten data with get_fdata()
         self.history_data = [] # all data gotten with get_fdata(), the first beign the original data deprecated
+        self.current_position_in_history = 0
         self.points_drawings_history = []
         self.points_drawings_translated_to_fdata_history = []
         self.image = None
@@ -173,11 +174,21 @@ class App(customtkinter.CTk):
 
     def go_forth_in_history(self):
         print("go_forth_in_history")
-        pass
+        if len(self.history_data) > self.current_position_in_history+1:
+            self.current_data = self.history_data[self.current_position_in_history + 1]
+            self.current_position_in_history += 1
+            self.save_image_paint_canvas()
+        else:
+            print("Cant go forth in history, bc there is no more")
 
     def go_back_in_history(self):
         print("go_back_in_history")
-        pass
+        if self.current_position_in_history > 0:
+            self.current_data = self.history_data[self.current_position_in_history - 1]
+            self.current_position_in_history -= 1
+            self.save_image_paint_canvas()
+        else:
+            print("Cant go back in history, bc there is no more")
 
 
     def change_program_state_label(self,state):
@@ -439,6 +450,7 @@ class App(customtkinter.CTk):
             new_data = algoThresholding(copy(self.current_data), tau_value)
             self.current_data = new_data
             self.history_data.append(new_data)
+            self.current_position_in_history += 1
             self.save_image_paint_canvas()
             self.change_program_state_label("ready")
         except ValueError:
@@ -455,6 +467,7 @@ class App(customtkinter.CTk):
             new_data = isodataAlgo(copy(self.current_data))
             self.current_data = new_data
             self.history_data.append(new_data)
+            self.current_position_in_history += 1
             self.save_image_paint_canvas()
             self.change_program_state_label("ready")
 
@@ -469,6 +482,7 @@ class App(customtkinter.CTk):
             new_data = algoRegionGrowing(self.current_data, self.points_drawings_translated_to_fdata_history,intensity_value)
             self.current_data = new_data
             self.history_data.append(new_data)
+            self.current_position_in_history += 1
             self.save_image_paint_canvas()
             self.change_program_state_label("ready")
         except ValueError:
@@ -490,6 +504,7 @@ class App(customtkinter.CTk):
             print("kmeans finished")
             self.current_data = new_data
             self.history_data.append(new_data)
+            self.current_position_in_history += 1
             self.save_image_paint_canvas()
             self.change_program_state_label("ready")
         except ValueError:
