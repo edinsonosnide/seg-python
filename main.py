@@ -12,6 +12,7 @@ import numpy as np
 from isodata import isodataAlgo
 from thresholding import algoThresholding
 from k_means import algoKMeans
+from region_growing import algoRegionGrowing
 
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -24,7 +25,9 @@ class App(customtkinter.CTk):
         self.file_path = "" # path to nifti file
         self.image_showing_path = "./images/canvas.png" # image showing on canvas
         self.current_data = None # nifti file loaded and gotten data with get_fdata()
-        self.history_data = [] # all data gotten with get_fdata(), the first beign the original data
+        self.history_data = [] # all data gotten with get_fdata(), the first beign the original data deprecated
+        self.points_drawings_history = []
+        self.points_drawings_translated_to_fdata_history = []
         self.image = None
         self.inital_slice = 0
         self.current_slice = self.inital_slice
@@ -33,6 +36,7 @@ class App(customtkinter.CTk):
         self.canvas = tk.Canvas(self.master, width=512, height=512)
         self.canvas.grid(row=0, column=1, padx=20, pady=(20,20))
         self.canvas.create_image(0,0,anchor=tk.NW,image = self.image)
+        self.fig_size_images = 10
 
         # Configura los eventos del mouse
         self.canvas.bind("<Button-1>", self.start_drawing)
@@ -44,7 +48,7 @@ class App(customtkinter.CTk):
 
         self.current_color = "Red"
         self.annotationsCoordinates =  [] #example [ ([1,2,3,400), ([1,2,3,400), ([1,2,3,5000)] -> ([slice,slice,slice],intentisity of point)
-        self.current_view_mode = "Coronal"
+        self.current_view_mode = "Axial"
 
         # configure window
         self.title("GUI - Medical Images Segmentation")
@@ -121,7 +125,7 @@ class App(customtkinter.CTk):
 
         #view mode of the file
         self.view_optionmenu = customtkinter.CTkOptionMenu(self.tabview.tab("Paint"), dynamic_resizing=False,
-                                                        values=["Coronal", "Sagital", "Axial"], command=self.change_view_event)
+                                                        values=["Axial", "Coronal", "Sagital"], command=self.change_view_event)
         self.view_optionmenu.grid(row=3, column=0, padx=20, pady=(20, 10))
 
         # Slice view f the file
@@ -152,12 +156,30 @@ class App(customtkinter.CTk):
         self.button_forth.grid(row=0, column=1, padx=(5, 5),)
 
         # run_segmentation_button button
-        self.clear_history_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.printing, text="Clear History")
+        self.clear_history_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.clear_paintings, text="Clear Paintings")
         self.clear_history_button.grid(row=7, column=0, padx=20, pady=20)
 
-    def printing(self):
-        print("sfsfsd")
+    def clear_paintings(self):
+        # clean history
+        self.points_drawings_history.clear()
+        self.points_drawings_translated_to_fdata_history.clear()
 
+        self.update_label(self.current_slice)
+
+    # it is called everytime the slicer is moved.
+    # it repaints all the drawings made in a specific slice
+    def repaint_points_drawings(self):
+        for three_d_cords in self.points_drawings_history:
+            if self.current_view_mode == 'Coronal' and 0 == three_d_cords[3] and self.current_slice == three_d_cords[0]:#coronal view mode
+                print("a")
+                self.canvas.create_oval(three_d_cords[1], three_d_cords[2], three_d_cords[1], three_d_cords[2], outline=self.current_color.lower(), width=2)
+            elif self.current_view_mode == 'Sagital' and 1 == three_d_cords[3] and self.current_slice == three_d_cords[1]:#sagital view mode
+                print("b")
+                self.canvas.create_oval(three_d_cords[0], three_d_cords[2], three_d_cords[0], three_d_cords[2], outline=self.current_color.lower(), width=2)
+            elif self.current_view_mode == 'Axial' and 2 == three_d_cords[3] and self.current_slice == three_d_cords[2]:#axial view mode
+                print("c")
+                self.canvas.create_oval(three_d_cords[0], three_d_cords[1], three_d_cords[0], three_d_cords[1], outline=self.current_color.lower(), width=2)
+            print(self.points_drawings_history)
     def update_label(self, value):
         self.label.configure(text="Current Slice: {}".format(int(value)))
         self.current_slice = int(value)
@@ -170,7 +192,7 @@ class App(customtkinter.CTk):
         TO TRANSLATE THE DRAWINGS COORDINATES, THE WIDTH, HEIGHT, OF THE SAVED IMAGE MUST BE DIVIDED BY THE WIDTH, HEIGHT
         OF THE DATA.SHAPE[0], DATA.SHAPE[1] AND THEN DIVIE THE RESULT WITH WIDTH, HEIGHT OF EACH COORD OF THE DRAWINGS
         '''
-        fig, axes = plt.subplots(1, 1, figsize=(8, 8),dpi=100)
+        fig, axes = plt.subplots(1, 1, figsize=(self.fig_size_images, self.fig_size_images),dpi=100)
 
         # Remove innnecesario info
         axes.axis('off')
@@ -197,6 +219,8 @@ class App(customtkinter.CTk):
         self.canvas.config(width=self.image.width(), height=self.image.height())
         self.canvas.update()
 
+        self.repaint_points_drawings()
+
     def start_drawing(self, event):
         # Guarda las coordenadas iniciales del dibujo
         self.start_x = event.x
@@ -210,14 +234,26 @@ class App(customtkinter.CTk):
             self.start_x = x
             self.start_y = y
             print(self.start_x, self.start_y)
-
-
+            #print("shape data:")
+            #print(self.current_data.shape[0])
+            # I will add all the points referencing fdata to paint again the points if necesseray
+            if self.current_view_mode == "Coronal":
+                self.points_drawings_history.append([self.current_slice,self.start_x,self.start_y,0])
+                self.points_drawings_translated_to_fdata_history.append([self.current_slice,self.start_y//(self.image.height()//self.current_data.shape[2]),self.start_x//(self.image.width()//self.current_data.shape[1])])
+            if self.current_view_mode == "Sagital":
+                self.points_drawings_history.append([self.start_x,self.current_slice,self.start_y,1])
+                self.points_drawings_translated_to_fdata_history.append([self.start_y//(self.image.height()//self.current_data.shape[2]),self.current_slice,self.start_x//(self.image.width()//self.current_data.shape[0])])
+            if self.current_view_mode == "Axial":
+                self.points_drawings_history.append([self.start_x,self.start_y,self.current_slice,2])
+                self.points_drawings_translated_to_fdata_history.append([round(self.start_y/round(self.image.height()/self.current_data.shape[1])),round(self.start_x/round(self.image.width()/self.current_data.shape[0])),self.current_slice])
+        print(self.points_drawings_history)
+        print(self.points_drawings_translated_to_fdata_history)
     def color_change_event(self,chosen_color):
         print(chosen_color)
         self.current_color = chosen_color
 
     def change_view_event(self, view_mode):
-        print(view_mode)
+        print("change view event",view_mode)
         # Create figure and axes
         '''
         IMPORTANT: THIS FUNCTION RESIZES THE ACTUAL DATA, IN SAVEFIG, I AM CROPPING THE BLANCK FRAME
@@ -225,7 +261,7 @@ class App(customtkinter.CTk):
         TO TRANSLATE THE DRAWINGS COORDINATES, THE WIDTH, HEIGHT, OF THE SAVED IMAGE MUST BE DIVIDED BY THE WIDTH, HEIGHT
         OF THE DATA.SHAPE[0], DATA.SHAPE[1] AND THEN DIVIE THE RESULT WITH WIDTH, HEIGHT OF EACH COORD OF THE DRAWINGS
         '''
-        fig, axes = plt.subplots(1, 1, figsize=(8, 8),dpi=100)
+        fig, axes = plt.subplots(1, 1, figsize=(self.fig_size_images, self.fig_size_images),dpi=100)
 
         # Remove innnecesario info
         axes.axis('off')
@@ -270,6 +306,7 @@ class App(customtkinter.CTk):
         self.canvas.config(width=self.image.width(), height=self.image.height())
         self.canvas.update()
 
+        self.repaint_points_drawings()
 
 
     def change_appearance_mode_event(self, new_appearance_mode: str):
@@ -283,36 +320,69 @@ class App(customtkinter.CTk):
             initialdir="C:/Users/edins/OneDrive/"
         )
 
+        # clean history
+        self.points_drawings_history.clear()
+        self.points_drawings_translated_to_fdata_history.clear()
+
         img_aux = nib.load(self.file_path)
         self.current_data = img_aux.get_fdata()
         print(self.current_data.shape)
 
-        self.change_view_event("Coronal")
+
 
         self.history_data.append(self.current_data)
 
+        self.current_view_mode = "Axial"
         self.save_image_paint_canvas()
 
         # Create figure and axes
 
     def save_image_paint_canvas(self):
+        print("change view event",self.current_view_mode)
+        # Create figure and axes
         '''
         IMPORTANT: THIS FUNCTION RESIZES THE ACTUAL DATA, IN SAVEFIG, I AM CROPPING THE BLANCK FRAME
         -> fig.savefig("./images/canvas.png", bbox_inches='tight', pad_inches=0)  # Adjust bounding box
         TO TRANSLATE THE DRAWINGS COORDINATES, THE WIDTH, HEIGHT, OF THE SAVED IMAGE MUST BE DIVIDED BY THE WIDTH, HEIGHT
         OF THE DATA.SHAPE[0], DATA.SHAPE[1] AND THEN DIVIE THE RESULT WITH WIDTH, HEIGHT OF EACH COORD OF THE DRAWINGS
         '''
-        fig, axes = plt.subplots(1, 1, figsize=(8, 8),dpi=100)
-
+        fig, axes = plt.subplots(1, 1, figsize=(self.fig_size_images, self.fig_size_images),dpi=100)
 
         # Remove innnecesario info
         axes.axis('off')
 
+        self.current_view_mode = self.current_view_mode
+
         # Display initial slices
-        ax0_img = axes.imshow(self.current_data[self.current_slice, :, :])
+        ax0_img = None
+        if self.current_view_mode == 'Coronal':
+            # Reset the current slice
+            self.slider.destroy()
+            self.slider = customtkinter.CTkSlider(self.tabview.tab("Paint"), from_= 0,to=self.current_data.shape[0], command=self.update_label,
+                                                  width=120)
+            self.slider.grid(row=5, column=0, padx=20, pady=(0, 20))
+            self.update_label(self.current_data.shape[0] // 2)
+            ax0_img = axes.imshow(self.current_data[self.current_slice, :, :])
+        elif self.current_view_mode == 'Sagital':
+            # Reset the current slice
+            self.slider.destroy()
+            self.slider = customtkinter.CTkSlider(self.tabview.tab("Paint"), from_= 0,to=self.current_data.shape[1], command=self.update_label,
+                                                  width=120)
+            self.slider.grid(row=5, column=0, padx=20, pady=(0, 20))
+            self.update_label(self.current_data.shape[1] // 2)
+            ax0_img = axes.imshow(self.current_data[:, self.current_slice, :])
+        elif self.current_view_mode == 'Axial':
+            # Reset the current slice
+            self.slider.destroy()
+            self.slider = customtkinter.CTkSlider(self.tabview.tab("Paint"), from_= 0,to=self.current_data.shape[2], command=self.update_label,
+                                                  width=120)
+            self.slider.grid(row=5, column=0, padx=20, pady=(0, 20))
+            self.update_label(self.current_data.shape[2] // 2)
+            ax0_img = axes.imshow(self.current_data[:, :, self.current_slice])
+
 
         # Save the figure
-        fig.savefig(self.image_showing_path, bbox_inches='tight', pad_inches=0)  # Adjust bounding box
+        fig.savefig("./images/canvas.png", bbox_inches='tight', pad_inches=0)  # Adjust bounding box
 
         self.image = ImageTk.PhotoImage(file=self.image_showing_path)
 
@@ -320,6 +390,8 @@ class App(customtkinter.CTk):
 
         self.canvas.config(width=self.image.width(), height=self.image.height())
         self.canvas.update()
+
+        self.repaint_points_drawings()
 
     def run_thresholding_event(self):
         print("run_thresholding_event click")
@@ -351,6 +423,14 @@ class App(customtkinter.CTk):
 
     def run_region_growing_event(self):
         print("run_region_growing_event click")
+
+
+
+
+        new_data = algoRegionGrowing(self.current_data,self.points_drawings_translated_to_fdata_history)
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.save_image_paint_canvas()
 
     def run_k_means_event(self):
         print("run_k_means_event click")
