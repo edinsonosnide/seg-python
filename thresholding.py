@@ -10,4 +10,8 @@ import numpy as np
 def algoThresholding(data: np.ndarray, tau: int ) -> None:
     img_th = data > tau
     print("tau choosen: ", tau)
-    return img_th
+    result_data = np.zeros_like(img_th, dtype=np.uint8)
+    result_data[img_th == True] = 255
+    result_data[img_th != True] = 5
+    print(result_data)
+    return result_data

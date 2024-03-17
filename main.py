@@ -141,14 +141,14 @@ class App(customtkinter.CTk):
         self.back_forth_buttons_frame = tk.Frame(self.tabview.tab("Paint"), bg=self.tabview.tab("Paint")._bg_color, width=350, height=150)
         self.back_forth_buttons_frame.grid(row=6, column=0, padx=0, pady=(20, 20))
 
-        self.button_back = tk.Button(self.back_forth_buttons_frame, width=20)
+        self.button_back = tk.Button(self.back_forth_buttons_frame, width=20, command=self.go_back_in_history)
         self.img_back = tk.PhotoImage(file="./images/go-back.png")  # asegúrate de usar "/" en lugar de "\"
         # Redimensionamos la imagen
         self.resized_img_back = self.img_back.subsample(20, 20)  # Ajusta los factores para redimensionar
         self.button_back.config(image=self.resized_img_back)
         self.button_back.grid(row=0, column=0, padx=(5, 5))
 
-        self.button_forth = tk.Button(self.back_forth_buttons_frame, width=20)
+        self.button_forth = tk.Button(self.back_forth_buttons_frame, width=20, command=self.go_forth_in_history)
         self.img_forth = tk.PhotoImage(file="./images/go-forth.png")  # asegúrate de usar "/" en lugar de "\"
         # Redimensionamos la imagen
         self.resized_img_forth = self.img_forth.subsample(20, 20)  # Ajusta los factores para redimensionar
@@ -158,6 +158,40 @@ class App(customtkinter.CTk):
         # run_segmentation_button button
         self.clear_history_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.clear_paintings, text="Clear Paintings")
         self.clear_history_button.grid(row=7, column=0, padx=20, pady=20)
+
+        # Program state label
+        self.state_of_program_label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Program State: ", font=customtkinter.CTkFont(size=20, weight="normal"))
+        self.state_of_program_label.grid(row=8, column=0, padx=20, pady=(20, 0))
+
+        # Program state label image
+        self.state_of_program_label_img = tk.Button(self.tabview.tab("Paint"), width=20)
+        self.state_image = tk.PhotoImage(file="./images/ready.png")  # asegúrate de usar "/" en lugar de "\"
+        # Redimensionamos la imagen
+        self.resized_state_image = self.state_image.subsample(20, 20)  # Ajusta los factores para redimensionar
+        self.state_of_program_label_img.config(image=self.resized_state_image)
+        self.state_of_program_label_img.grid(row=9, column=0, padx=(5, 5))
+
+    def go_forth_in_history(self):
+        print("go_forth_in_history")
+        pass
+
+    def go_back_in_history(self):
+        print("go_back_in_history")
+        pass
+
+
+    def change_program_state_label(self,state):
+        self.state_image = None
+        if state == "loading":
+            self.state_image = tk.PhotoImage(file="./images/loading.png")  # asegúrate de usar "/" en lugar de "\"
+        elif state == "ready":
+            self.state_image = tk.PhotoImage(file="./images/ready.png")  # asegúrate de usar "/" en lugar de "\"
+        else:
+            return ValueError
+        # Redimensionamos la imagen
+        self.resized_state_image = self.state_image.subsample(20, 20)  # Ajusta los factores para redimensionar
+        self.state_of_program_label_img.config(image=self.resized_state_image)
+        self.state_of_program_label_img.update()
 
     def clear_paintings(self):
         # clean history
@@ -397,6 +431,7 @@ class App(customtkinter.CTk):
         print("run_thresholding_event click")
         tau_input = customtkinter.CTkInputDialog(text="Type in a tau:", title="Tau dialog")
         input_value = tau_input.get_input()
+        self.change_program_state_label("loading")
         try:
             # Convert the input to an integer
             tau_value = int(input_value)
@@ -405,6 +440,7 @@ class App(customtkinter.CTk):
             self.current_data = new_data
             self.history_data.append(new_data)
             self.save_image_paint_canvas()
+            self.change_program_state_label("ready")
         except ValueError:
             print("Invalid input: Please enter an integer value for tau.")
     '''
@@ -414,36 +450,48 @@ class App(customtkinter.CTk):
     def run_isodata_event(self):
         print("run_isodata_event click")
         print("An example of what is inside of data is: ",str(self.current_data[0][0][0]))
+        self.change_program_state_label("loading")
         if str(self.current_data[0][0][0]) != 'False' and str(self.current_data[0][0][0]) != 'True':
             new_data = isodataAlgo(copy(self.current_data))
             self.current_data = new_data
             self.history_data.append(new_data)
             self.save_image_paint_canvas()
+            self.change_program_state_label("ready")
 
 
     def run_region_growing_event(self):
         print("run_region_growing_event click")
+        intensity_tolerance_input = customtkinter.CTkInputDialog(text="Type in the number of the intensity difference tolerance:", title="Intensity dialog")
+        input_value = intensity_tolerance_input.get_input()
+        self.change_program_state_label("loading")
+        try:
+            intensity_value = int(input_value)
+            new_data = algoRegionGrowing(self.current_data, self.points_drawings_translated_to_fdata_history,intensity_value)
+            self.current_data = new_data
+            self.history_data.append(new_data)
+            self.save_image_paint_canvas()
+            self.change_program_state_label("ready")
+        except ValueError:
+            print("Invalid input: Please enter an integer value for intensity difference tolerance")
 
 
 
-
-        new_data = algoRegionGrowing(self.current_data,self.points_drawings_translated_to_fdata_history)
-        self.current_data = new_data
-        self.history_data.append(new_data)
-        self.save_image_paint_canvas()
 
     def run_k_means_event(self):
         print("run_k_means_event click")
         clusters_input = customtkinter.CTkInputDialog(text="Type in the number of clusters:", title="Clusters dialog")
         input_value = clusters_input.get_input()
+        self.change_program_state_label("loading")
         try:
             # Convert the input to an integer
             clusters_value = int(input_value)
             # Call the thresholding function with the current data and the user-provided threshold
             new_data = algoKMeans(copy(self.current_data), clusters_value)
+            print("kmeans finished")
             self.current_data = new_data
             self.history_data.append(new_data)
             self.save_image_paint_canvas()
+            self.change_program_state_label("ready")
         except ValueError:
             print("Invalid input: Please enter an integer value for tau.")
 

@@ -24,4 +24,8 @@ def isodataAlgo(data: np.ndarray) -> None:
 
         tau_t = tau_new
 
-    return img_th
+    result_data = np.zeros_like(img_th, dtype=np.uint8)
+    result_data[img_th == True] = 255
+    result_data[img_th != True] = 5
+    print(result_data)
+    return result_data

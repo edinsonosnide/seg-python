@@ -1,7 +1,7 @@
 import numpy as np
 from queue import Queue
 
-def algoRegionGrowing(data: np.ndarray, seeds: list):
+def algoRegionGrowing(data: np.ndarray, seeds: list, intensity_input: int):
     # Ensure the data is a valid 3D array
     if len(data.shape) != 3:
         raise ValueError("Input data must be a 3D array")
@@ -38,7 +38,6 @@ def algoRegionGrowing(data: np.ndarray, seeds: list):
     ]
     '''
     connectivity = [
-
         (1, 0, 0), (0, 0, 1), (0, 1, 0),(-1, 0, 0), (0, -1, 0),  (0, 0, -1),
     ]
 
@@ -48,7 +47,7 @@ def algoRegionGrowing(data: np.ndarray, seeds: list):
 
     for seed in seeds:
 
-        intensity_difference = 50 #50
+        intensity_difference = intensity_input #50
 
         mean_intensity = data[seed[0], seed[1], seed[2]]
         number_of_elements_mean_intensity = 1
