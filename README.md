@@ -55,4 +55,15 @@ Go back to the prior fdata
 ![First window](screenshots/go_back.png)
 Run isodata (Global thresholding)
 ![First window](screenshots/isodata.png)
+Run k-means (you have to enter the number of clusters you want)
+![First window](screenshots/uploaded_nifti.png)
+![First window](screenshots/k-means.png)
+![First window](screenshots/waiting_k-means_segmentation.png)
+![First window](screenshots/k-means_result.png)
+Run Region Growing (you have to annotate the region you want to grow, and 
+decide an intensity difference tolerance)
+![First window](screenshots/region_growing.png)
+![First window](screenshots/waiting_region_growing_segmentation.png)
+![First window](screenshots/region_growing_result.png)
+![First window](screenshots/region_growing_result_2.png)
 
