@@ -67,3 +67,14 @@ decide an intensity difference tolerance)
 ![First window](screenshots/region_growing_result.png)
 ![First window](screenshots/region_growing_result_2.png)
 
+## Libraries
+- `customtkinter`: A custom module for enhanced GUI elements.
+- `tkinter`: Standard Python interface to the Tk GUI toolkit.
+- `PIL`: Python Imaging Library to work with images.
+- `Python`: Python version 3.12.0.
+- `numpy`: A powerful library for numerical computing.
+- `nibabel`: A library for reading and writing neuroimaging data.
+- `matplotlib`: A plotting library for creating static, animated, and interactive visualizations in Python.
+- `math`: A standard Python library providing mathematical functions and operations.
+- `copy`: A module for creating shallow and deep copies of objects in Python.
+- `queue`: A module implementing multi-producer, multi-consumer queues in Python, useful for synchronizing producer and consumer threads.
