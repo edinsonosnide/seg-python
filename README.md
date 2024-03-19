@@ -37,4 +37,22 @@ python3 main.py
 * Run segmentation algorithms: Thresholding, isodata, region growing, k-means
 ## Screenshots
 First image after running the program
-![First window](screenshots/a.png)
+![First window](screenshots/first_image.png)
+Uploading a Medical Image (nifti file)
+![First window](screenshots/upload_nifti_button.png)
+File successfully uploaded
+![First window](screenshots/uploaded_nifti.png)
+Change between sagital, coronal, axial view, and change the slice
+![First window](screenshots/view_mode_and_slices.png)
+Change color and annotate
+![First window](screenshots/color.png)
+Clear all annotations
+![First window](screenshots/clear_annotations.png)
+Run thresholding (you have to choose a value to do it)
+![First window](screenshots/thresholding.png)
+![First window](screenshots/thresholding_result.png)
+Go back to the prior fdata
+![First window](screenshots/go_back.png)
+Run isodata (Global thresholding)
+![First window](screenshots/isodata.png)
+
