@@ -1,18 +1,20 @@
-import tkinter
-import tkinter.messagebox
+import os
 from copy import copy
-from tkinter import filedialog, ALL
+from tkinter import filedialog
 import tkinter as tk
 import customtkinter
-from PIL import Image,ImageTk
+import numpy as np
+from PIL import ImageTk
 import nibabel as nib
 import matplotlib.pyplot as plt
-import numpy as np
 
-from isodata import isodataAlgo
-from thresholding import algoThresholding
-from k_means import algoKMeans
-from region_growing import algoRegionGrowing
+from filters.mean_filter import mean_filter
+from filters.median_filter import median_filter
+from segmentation_algorithms.isodata import isodataAlgo
+from segmentation_algorithms.thresholding import algoThresholding
+from segmentation_algorithms.k_means import algoKMeans
+from segmentation_algorithms.region_growing import algoRegionGrowing
+from standarization_algorithms.recalling_std import rescaling_std
 
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -62,8 +64,8 @@ class App(customtkinter.CTk):
 
         # create sidebar frame with widgets
         self.left_sidebar_frame = customtkinter.CTkFrame(self, width=200, corner_radius=0)
-        self.left_sidebar_frame.grid(row=0, column=0, rowspan=10, sticky="nsew")
-        self.left_sidebar_frame.grid_rowconfigure(10, weight=1)
+        self.left_sidebar_frame.grid(row=0, column=0, rowspan=18, sticky="nsew")
+        self.left_sidebar_frame.grid_rowconfigure(18, weight=1)
 
         # welcome text
         self.logo_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Welcome!", font=customtkinter.CTkFont(size=20, weight="bold"))
@@ -93,19 +95,52 @@ class App(customtkinter.CTk):
         self.run_k_means_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_k_means_event, text="Run K Means")
         self.run_k_means_button.grid(row=7, column=0, padx=20, pady=10)
 
+        # avaliable filters label
+        self.avaliable_filters_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Avaliable Filters:", font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.avaliable_filters_label.grid(row=8, column=0, padx=20, pady=(20, 10))
+
+        # run_segmentation_button button
+        self.run_mean_filter_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_mean_filter_event, text="Run Mean Filter")
+        self.run_mean_filter_button.grid(row=9, column=0, padx=20, pady=10)
+
+        # run_segmentation_button button
+        self.run_median_filter_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_median_filter_event, text="Run Median Filter")
+        self.run_median_filter_button.grid(row=10, column=0, padx=20, pady=10)
+
+        # avaliable standarization alogos label
+        self.avaliable_std_algos_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Standarization:",
+                                                              font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.avaliable_std_algos_label.grid(row=11, column=0, padx=20, pady=(20, 10))
+
+        # run_segmentation_button button
+        self.run_rescaling_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_rescaling_std_event, text="Run Rescaling Std.")
+        self.run_rescaling_button.grid(row=12, column=0, padx=20, pady=10)
+
+        # run_segmentation_button button
+        self.run_zscore_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_zscore_std_event, text="Run Zscore Std.")
+        self.run_zscore_button.grid(row=13, column=0, padx=20, pady=10)
+
+        # run_segmentation_button button
+        self.run_histogram_matching_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_h_matching_std_event, text="Run H. Matching Std.")
+        self.run_histogram_matching_button.grid(row=14, column=0, padx=20, pady=10)
+
+        # run_segmentation_button button
+        self.run_white_stripe_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_white_stripe_std_event, text="Run White Stripe Std.")
+        self.run_white_stripe_button.grid(row=15, column=0, padx=20, pady=10)
+
         # appareance mode label
         self.appearance_mode_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=8, column=0, padx=20, pady=10)
+        self.appearance_mode_label.grid(row=16, column=0, padx=20, pady=10)
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.left_sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=9, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.grid(row=17, column=0, padx=20, pady=(10, 10))
 
 
 
 
         # create tabview
         self.tabview = customtkinter.CTkTabview(self, width=250)
-        self.tabview.grid(row=0, rowspan=4, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
+        self.tabview.grid(row=0, rowspan=11, column=3, padx=(20, 20), pady=(20, 0), sticky="nsew")
         self.tabview.add("Paint")
         self.tabview.add("Info")
         self.tabview.tab("Paint").grid_columnconfigure(0, weight=1)
@@ -172,6 +207,14 @@ class App(customtkinter.CTk):
         self.state_of_program_label_img.config(image=self.resized_state_image)
         self.state_of_program_label_img.grid(row=9, column=0, padx=(5, 5))
 
+        # download annotations button
+        self.download_annotations_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.download_annotations_event, text="Download Annotations")
+        self.download_annotations_button.grid(row=10, column=0, padx=20, pady=(150,20))
+
+        # download current matrix button
+        self.download_file_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.download_nifti_event, text="Download NIFTI")
+        self.download_file_button.grid(row=11, column=0, padx=20, pady=20)
+
     def go_forth_in_history(self):
         print("go_forth_in_history")
         if len(self.history_data) > self.current_position_in_history+1:
@@ -211,6 +254,33 @@ class App(customtkinter.CTk):
 
         self.update_label(self.current_slice)
 
+    def download_annotations_event(self):
+        print("Downloading annotations...")
+
+        # Create a mask to keep track of visited voxels
+        mask = np.zeros_like(self.current_data, dtype=np.uint8)
+
+        for x, y, z in self.points_drawings_translated_to_fdata_history:
+            mask[x][y][z] = 1
+
+        img = nib.load(self.file_path)
+        final_img = nib.Nifti1Image(mask, img.affine)
+        folder_path = filedialog.askdirectory(
+            initialdir="./downloaded_files"
+        )
+        nib.save(final_img, os.path.join(folder_path, 'annotations.nii.gz'))
+
+    def download_nifti_event(self):
+        print("Downloading nifti")
+        img = nib.load(self.file_path)
+        # Convert boolean data type to uint8
+        if self.current_data.dtype == bool:
+            self.current_data = self.current_data.astype(np.uint8)
+        final_img = nib.Nifti1Image(self.current_data, img.affine)
+        folder_path = filedialog.askdirectory(
+            initialdir="./downloaded_files"
+        )
+        nib.save(final_img, os.path.join(folder_path, 'new_data.nii.gz'))
     # it is called everytime the slicer is moved.
     # it repaints all the drawings made in a specific slice
     def repaint_points_drawings(self):
@@ -510,6 +580,46 @@ class App(customtkinter.CTk):
         except ValueError:
             print("Invalid input: Please enter an integer value for tau.")
 
+
+    def run_mean_filter_event(self):
+        print("run_mean_filter_event click")
+        self.change_program_state_label("loading")
+        new_data = mean_filter(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
+
+    def run_median_filter_event(self):
+        print("run_median_filter_event click")
+        self.change_program_state_label("loading")
+        new_data = median_filter(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
+
+
+    def run_rescaling_std_event(self):
+        print("run_rescaling_std_event click")
+        self.change_program_state_label("loading")
+        new_data = rescaling_std(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
+
+    def run_zscore_std_event(self):
+        print("run_zscore_std_event click")
+
+    def run_h_matching_std_event(self):
+        print("run_h_matching_std_event click")
+
+    def run_white_stripe_std_event(self):
+        print("run_white_stripe_std_event click")
 
 if __name__ == "__main__":
     app = App()
