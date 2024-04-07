@@ -9,13 +9,13 @@ def median_filter(inputData: np.ndarray) -> np.ndarray:
     ]
 
     # Create a mask to not edit the original data
-    data = np.zeros_like(inputData, dtype=np.uint8)
+    data = np.zeros_like(inputData, dtype=float)
 
     for i in range(inputData.shape[0]):
       for j in range(inputData.shape[1]):
         for k in range(inputData.shape[2]):
             intensities = np.array([])
-            # get the mean of neighbors
+            # get the median of neighbors
             for dx, dy, dz in neighbors:
                 x, y, z = i + dx, j + dy, k + dz
                 if (0 <= x < inputData.shape[0] and 0 <= y < inputData.shape[1] and 0 <= z < inputData.shape[2]):

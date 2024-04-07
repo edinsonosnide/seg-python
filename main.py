@@ -14,7 +14,9 @@ from segmentation_algorithms.isodata import isodataAlgo
 from segmentation_algorithms.thresholding import algoThresholding
 from segmentation_algorithms.k_means import algoKMeans
 from segmentation_algorithms.region_growing import algoRegionGrowing
-from standarization_algorithms.recalling_std import rescaling_std
+from standarization_algorithms.rescalling_std import rescaling_std
+from standarization_algorithms.white_stripe_std import white_stripe_std
+from standarization_algorithms.zscore_std import z_score_std
 
 customtkinter.set_appearance_mode("System")  # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_default_color_theme("blue")  # Themes: "blue" (standard), "green", "dark-blue"
@@ -432,7 +434,7 @@ class App(customtkinter.CTk):
         print("upload_file_event click")
 
         self.file_path = filedialog.askopenfilename(
-            initialdir="C:/Users/edins/OneDrive/"
+            initialdir="./"
         )
 
         # clean history
@@ -614,12 +616,26 @@ class App(customtkinter.CTk):
 
     def run_zscore_std_event(self):
         print("run_zscore_std_event click")
+        self.change_program_state_label("loading")
+        new_data = z_score_std(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
 
     def run_h_matching_std_event(self):
         print("run_h_matching_std_event click")
 
     def run_white_stripe_std_event(self):
         print("run_white_stripe_std_event click")
+        self.change_program_state_label("loading")
+        new_data = white_stripe_std(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
 
 if __name__ == "__main__":
     app = App()

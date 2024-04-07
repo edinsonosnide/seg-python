@@ -33,12 +33,12 @@ def algoRegionGrowing(inputData: np.ndarray, seeds: list, intensity_input: int=5
                 0 <= x < inputData.shape[0] and
                 0 <= y < inputData.shape[1] and
                 0 <= z < inputData.shape[2] and
-                mask[x, y, z] == 0
+                mask[x][y][z] == 0
             ):
                 # Check the intensity difference with the seed
-                if abs(inputData[x, y, z] - mean_intensity) <= intensity_difference:
+                if abs(inputData[x][y][z] - mean_intensity) <= intensity_difference:
                     # Mark the voxel as visited and assign the region label
-                    mask[x, y, z] = 255
+                    mask[x][y][z] = 255
 
                     # upadte the mean_intensity
                     number_of_elements_mean_intensity += 1
@@ -50,7 +50,7 @@ def algoRegionGrowing(inputData: np.ndarray, seeds: list, intensity_input: int=5
                         queue.put((x + dx, y + dy, z + dz))
                 else:
                     # this voxel wont take part in the segmentation
-                    mask[x, y, z] = 175
+                    mask[x][y][z] = 175
 
     data = np.zeros_like(mask, dtype=np.uint8)
     data[mask == 255] = 255
