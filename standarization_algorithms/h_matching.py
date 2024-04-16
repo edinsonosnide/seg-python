@@ -63,38 +63,40 @@ myTestData = np.array([
     ]
 ])
 
-myTrainData = np.random.randint(1, 1001, size=(100, 100, 100))
-myTestData = np.random.randint(1, 100, size=(20, 20, 20))
+def debug():
+    myTrainData = np.random.randint(1, 1001, size=(100, 100, 100))
+    myTestData = np.random.randint(1, 100, size=(20, 20, 20))
 
-result = h_matching(myTrainData, myTestData, myNumberOfK)
-print(result)
+    result = h_matching(myTrainData, myTestData, myNumberOfK)
+    print(result)
 
-import matplotlib.pyplot as plt
+    import matplotlib.pyplot as plt
 
-# Graficar el histograma de los datos de entrenamiento
-plt.figure(figsize=(8, 6))
-plt.hist(myTrainData.flatten(), alpha=0.7, edgecolor='black')
-plt.title('Histograma de myTrainData')
-plt.xlabel('Valor')
-plt.ylabel('Frecuencia')
-plt.grid(True)
-plt.show()
+    # Graficar el histograma de los datos de entrenamiento
+    plt.figure(figsize=(8, 6))
+    plt.hist(myTrainData.flatten(), alpha=0.7, edgecolor='black')
+    plt.title('Histograma de myTrainData')
+    plt.xlabel('Valor')
+    plt.ylabel('Frecuencia')
+    plt.grid(True)
+    plt.show()
 
-# Graficar el histograma de los datos de prueba
-plt.figure(figsize=(8, 6))
-plt.hist(myTestData.flatten(), alpha=0.7, edgecolor='black')
-plt.title('Histograma de myTestData')
-plt.xlabel('Valor')
-plt.ylabel('Frecuencia')
-plt.grid(True)
-plt.show()
+    # Graficar el histograma de los datos de prueba
+    plt.figure(figsize=(8, 6))
+    plt.hist(myTestData.flatten(), alpha=0.7, edgecolor='black')
+    plt.title('Histograma de myTestData')
+    plt.xlabel('Valor')
+    plt.ylabel('Frecuencia')
+    plt.grid(True)
+    plt.show()
 
-# Graficar el histograma de los datos de prueba
-plt.figure(figsize=(8, 6))
-plt.hist(result.flatten(), alpha=0.7, edgecolor='black')
-plt.title('Histograma de result')
-plt.xlabel('Valor')
-plt.ylabel('Frecuencia')
-plt.grid(True)
-plt.show()
+    # Graficar el histograma de los datos de prueba
+    plt.figure(figsize=(8, 6))
+    plt.hist(result.flatten(), alpha=0.7, edgecolor='black')
+    plt.title('Histograma de result')
+    plt.xlabel('Valor')
+    plt.ylabel('Frecuencia')
+    plt.grid(True)
+    plt.show()
+#debug()
 

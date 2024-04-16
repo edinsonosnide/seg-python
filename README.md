@@ -14,7 +14,7 @@ virtualenv venv
 ```
 3. Activate the just created virtual environment
 ```bash
-source venv/bin/activate
+source venv/Scripts/activate
 ```
 4. Install all the dependencies in the environment running:
 ```bash
