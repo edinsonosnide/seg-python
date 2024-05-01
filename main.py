@@ -30,10 +30,14 @@ class App(customtkinter.CTk):
         self.file_path = "" # path to nifti file
         self.image_showing_path = "./images/canvas.png" # image showing on canvas
         self.current_data = None # nifti file loaded and gotten data with get_fdata()
-        self.history_data = [] # all data gotten with get_fdata(), the first beign the original data deprecated
         self.current_position_in_history = 0
-        self.points_drawings_history = []
-        self.points_drawings_translated_to_fdata_history = []
+        self.history_data = [] # all data gotten with get_fdata(), the first beign the original data deprecated is a array of three dim arrays (fdatas)
+        #self.history_data_foreground = []  # array of three dim arrays (fdatas) of foreground annotations
+        #self.history_data_background = []  # array of three dim arrays (fdatas) of background annotations
+        self.points_drawings = [] #example [self.current_slice,self.start_x,self.start_y,0,'Red'] o [self.current_slice,self.start_x,self.start_y,1,'Red'] o [self.current_slice,self.start_x,self.start_y,2,'Red']
+        self.points_drawings_translated_to_fdata = [] #translated draw points with the original matrix: [[1,2,3],[4,5,6]]
+        self.points_drawings_translated_to_fdata_foreground = [] #translated draw points with the original matrix: [[1,2,3,'Red'],[4,5,6,'Red']]
+        self.points_drawings_translated_to_fdata_background = [] #translated draw points with the original matrix: [[1,2,3,'Pink'],[4,5,6,'Pink']]
         self.image = None
         self.inital_slice = 0
         self.current_slice = self.inital_slice
@@ -51,9 +55,15 @@ class App(customtkinter.CTk):
         self.start_x = None
         self.start_y = None
 
+        self.my_pad_y = 2
 
-        self.current_color = "Red"
-        self.annotationsCoordinates =  [] #example [ ([1,2,3,400), ([1,2,3,400), ([1,2,3,5000)] -> ([slice,slice,slice],intentisity of point)
+
+
+        self.label_options_foreground_color = "Red-Foreground"
+        self.label_options_background_color = "Pink-Background"
+        self.foreground_color = "Red"
+        self.background_color = "Pink"
+        self.current_color = self.foreground_color
         self.current_view_mode = "Axial"
 
         # configure window
@@ -72,71 +82,74 @@ class App(customtkinter.CTk):
 
         # welcome text
         self.logo_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Welcome!", font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.logo_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        self.logo_label.grid(row=0, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
         # upload file button
         self.upload_image_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.upload_file_and_show_first_image_event, text="Upload NIFTI")
-        self.upload_image_button.grid(row=1, column=0, padx=20, pady=10)
+        self.upload_image_button.grid(row=1, column=0, padx=20, pady=self.my_pad_y)
 
         # welcome text
         self.algos_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Avaliable Algos:", font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.algos_label.grid(row=2, column=0, padx=20, pady=(20, 10))
+        self.algos_label.grid(row=2, column=0, padx=20, pady=(self.my_pad_y , self.my_pad_y))
 
         # run_segmentation_button button
         self.run_thresholding_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_thresholding_event, text="Run Thresholding")
-        self.run_thresholding_button.grid(row=4, column=0, padx=20, pady=10)
+        self.run_thresholding_button.grid(row=4, column=0, padx=20, pady=self.my_pad_y)
 
         # run_segmentation_button button
         self.run_isodata_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_isodata_event, text="Run Isodata")
-        self.run_isodata_button.grid(row=5, column=0, padx=20, pady=10)
+        self.run_isodata_button.grid(row=5, column=0, padx=20, pady=self.my_pad_y)
 
         # run_segmentation_button button
         self.run_region_growing_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_region_growing_event, text="Run Region Growing")
-        self.run_region_growing_button.grid(row=6, column=0, padx=20, pady=10)
+        self.run_region_growing_button.grid(row=6, column=0, padx=20, pady=self.my_pad_y)
 
         # run_segmentation_button button
         self.run_k_means_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_k_means_event, text="Run K Means")
-        self.run_k_means_button.grid(row=7, column=0, padx=20, pady=10)
+        self.run_k_means_button.grid(row=7, column=0, padx=20, pady=self.my_pad_y)
 
         # avaliable filters label
         self.avaliable_filters_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Avaliable Filters:", font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.avaliable_filters_label.grid(row=8, column=0, padx=20, pady=(20, 10))
+        self.avaliable_filters_label.grid(row=8, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
         # run_segmentation_button button
         self.run_mean_filter_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_mean_filter_event, text="Run Mean Filter")
-        self.run_mean_filter_button.grid(row=9, column=0, padx=20, pady=10)
+        self.run_mean_filter_button.grid(row=9, column=0, padx=20, pady=self.my_pad_y)
 
         # run_segmentation_button button
         self.run_median_filter_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_median_filter_event, text="Run Median Filter")
-        self.run_median_filter_button.grid(row=10, column=0, padx=20, pady=10)
+        self.run_median_filter_button.grid(row=10, column=0, padx=20, pady=self.my_pad_y)
 
         # avaliable standarization alogos label
         self.avaliable_std_algos_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Standarization:",
                                                               font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.avaliable_std_algos_label.grid(row=11, column=0, padx=20, pady=(20, 10))
+        self.avaliable_std_algos_label.grid(row=11, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
         # run_segmentation_button button
         self.run_rescaling_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_rescaling_std_event, text="Run Rescaling Std.")
-        self.run_rescaling_button.grid(row=12, column=0, padx=20, pady=10)
+        self.run_rescaling_button.grid(row=12, column=0, padx=20, pady=self.my_pad_y)
 
         # run_segmentation_button button
         self.run_zscore_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_zscore_std_event, text="Run Zscore Std.")
-        self.run_zscore_button.grid(row=13, column=0, padx=20, pady=10)
+        self.run_zscore_button.grid(row=13, column=0, padx=20, pady=self.my_pad_y)
 
         # run_segmentation_button button
         self.run_histogram_matching_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_h_matching_std_event, text="Run H. Matching Std.")
-        self.run_histogram_matching_button.grid(row=14, column=0, padx=20, pady=10)
+        self.run_histogram_matching_button.grid(row=14, column=0, padx=20, pady=self.my_pad_y)
 
         # run_segmentation_button button
         self.run_white_stripe_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_white_stripe_std_event, text="Run White Stripe Std.")
-        self.run_white_stripe_button.grid(row=15, column=0, padx=20, pady=10)
+        self.run_white_stripe_button.grid(row=15, column=0, padx=20, pady=self.my_pad_y)
 
         # appareance mode label
         self.appearance_mode_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Appearance Mode:", anchor="w")
         self.appearance_mode_label.grid(row=16, column=0, padx=20, pady=10)
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.left_sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=17, column=0, padx=20, pady=(10, 10))
+        self.appearance_mode_optionemenu.grid(row=17, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+
+
+
 
 
 
@@ -150,35 +163,41 @@ class App(customtkinter.CTk):
         self.tabview.tab("Info").grid_columnconfigure(0, weight=1)
 
         # choose color text
-        self.choose_color_label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Choose a color:", font=customtkinter.CTkFont(size=20, weight="normal"))
-        self.choose_color_label.grid(row=0, column=0, padx=20, pady=(20, 10))
+        self.choose_color_label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Labeling options:",
+                                                         font=customtkinter.CTkFont(size=20, weight="normal"))
+        self.choose_color_label.grid(row=0, column=0, padx=20, pady=(20, self.my_pad_y))
 
-        #color options
+        # color options
         self.colors_optionmenu = customtkinter.CTkOptionMenu(self.tabview.tab("Paint"), dynamic_resizing=False,
-                                                        values=["Red", "Yellow", "Green"], command=self.color_change_event)
-        self.colors_optionmenu.grid(row=1, column=0, padx=20, pady=(20, 10))
+                                                             values=[self.label_options_foreground_color, self.label_options_background_color],
+                                                             command=self.color_change_event)
+        self.colors_optionmenu.grid(row=1, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+
+
 
         # choose color text
-        self.choose_view_label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Choose a view:", font=customtkinter.CTkFont(size=20, weight="normal"))
-        self.choose_view_label.grid(row=2, column=0, padx=20, pady=(20, 10))
+        self.choose_view_label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Choose a view:",
+                                                        font=customtkinter.CTkFont(size=20, weight="normal"))
+        self.choose_view_label.grid(row=2, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
-        #view mode of the file
+        # view mode of the file
         self.view_optionmenu = customtkinter.CTkOptionMenu(self.tabview.tab("Paint"), dynamic_resizing=False,
-                                                        values=["Axial", "Coronal", "Sagital"], command=self.change_view_event)
-        self.view_optionmenu.grid(row=3, column=0, padx=20, pady=(20, 10))
+                                                           values=["Axial", "Coronal", "Sagital"],
+                                                           command=self.change_view_event)
+        self.view_optionmenu.grid(row=3, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
         # Slice view f the file
         self.label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Current Slice: 0")
         self.label.grid(row=4, column=0, padx=20, pady=(20, 0))
 
-        self.slider = customtkinter.CTkSlider(self.tabview.tab("Paint"), from_=0, to=0,  command=self.update_label,width=120)
+        self.slider = customtkinter.CTkSlider(self.tabview.tab("Paint"), from_=0, to=0, command=self.update_label,
+                                              width=120)
         self.slider.grid(row=5, column=0, padx=20, pady=(0, 20))
 
-
-
         # Creamos un frame interno
-        self.back_forth_buttons_frame = tk.Frame(self.tabview.tab("Paint"), bg=self.tabview.tab("Paint")._bg_color, width=350, height=150)
-        self.back_forth_buttons_frame.grid(row=6, column=0, padx=0, pady=(20, 20))
+        self.back_forth_buttons_frame = tk.Frame(self.tabview.tab("Paint"), bg=self.tabview.tab("Paint")._bg_color,
+                                                 width=350, height=150)
+        self.back_forth_buttons_frame.grid(row=6, column=0, padx=0, pady=(self.my_pad_y, 20))
 
         self.button_back = tk.Button(self.back_forth_buttons_frame, width=20, command=self.go_back_in_history)
         self.img_back = tk.PhotoImage(file="./images/go-back.png")  # asegúrate de usar "/" en lugar de "\"
@@ -192,15 +211,17 @@ class App(customtkinter.CTk):
         # Redimensionamos la imagen
         self.resized_img_forth = self.img_forth.subsample(20, 20)  # Ajusta los factores para redimensionar
         self.button_forth.config(image=self.resized_img_forth)
-        self.button_forth.grid(row=0, column=1, padx=(5, 5),)
+        self.button_forth.grid(row=0, column=1, padx=(5, 5),pady=self.my_pad_y )
 
         # run_segmentation_button button
-        self.clear_history_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.clear_paintings, text="Clear Paintings")
-        self.clear_history_button.grid(row=7, column=0, padx=20, pady=20)
+        self.clear_history_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.clear_paintings,
+                                                            text="Clear Paintings")
+        self.clear_history_button.grid(row=7, column=0, padx=20, pady=self.my_pad_y)
 
         # Program state label
-        self.state_of_program_label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Program State: ", font=customtkinter.CTkFont(size=20, weight="normal"))
-        self.state_of_program_label.grid(row=8, column=0, padx=20, pady=(20, 0))
+        self.state_of_program_label = customtkinter.CTkLabel(self.tabview.tab("Paint"), text="Program State: ",
+                                                             font=customtkinter.CTkFont(size=20, weight="normal"))
+        self.state_of_program_label.grid(row=8, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
         # Program state label image
         self.state_of_program_label_img = tk.Button(self.tabview.tab("Paint"), width=20)
@@ -211,12 +232,15 @@ class App(customtkinter.CTk):
         self.state_of_program_label_img.grid(row=9, column=0, padx=(5, 5))
 
         # download annotations button
-        self.download_annotations_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.download_annotations_event, text="Download Annotations")
-        self.download_annotations_button.grid(row=10, column=0, padx=20, pady=(150,20))
+        self.download_annotations_button = customtkinter.CTkButton(self.tabview.tab("Paint"),
+                                                                   command=self.download_annotations_event,
+                                                                   text="Download Annotations")
+        self.download_annotations_button.grid(row=10, column=0, padx=20, pady=(350, self.my_pad_y))
 
         # download current matrix button
-        self.download_file_button = customtkinter.CTkButton(self.tabview.tab("Paint"), command=self.download_nifti_event, text="Download NIFTI")
-        self.download_file_button.grid(row=11, column=0, padx=20, pady=20)
+        self.download_file_button = customtkinter.CTkButton(self.tabview.tab("Paint"),
+                                                            command=self.download_nifti_event, text="Download NIFTI")
+        self.download_file_button.grid(row=11, column=0, padx=20, pady=self.my_pad_y)
 
     def go_forth_in_history(self):
         print("go_forth_in_history")
@@ -252,8 +276,8 @@ class App(customtkinter.CTk):
 
     def clear_paintings(self):
         # clean history
-        self.points_drawings_history.clear()
-        self.points_drawings_translated_to_fdata_history.clear()
+        self.points_drawings.clear()
+        self.points_drawings_translated_to_fdata.clear()
 
         self.update_label(self.current_slice)
 
@@ -263,8 +287,11 @@ class App(customtkinter.CTk):
         # Create a mask to keep track of visited voxels
         mask = np.zeros_like(self.current_data, dtype=np.uint8)
 
-        for x, y, z in self.points_drawings_translated_to_fdata_history:
-            mask[x][y][z] = 1
+        for x, y, z, m in self.points_drawings_translated_to_fdata_foreground:
+            mask[x][y][z] = -100
+
+        for x, y, z, m in self.points_drawings_translated_to_fdata_background:
+            mask[x][y][z] = -200
 
         img = nib.load(self.file_path)
         final_img = nib.Nifti1Image(mask, img.affine)
@@ -287,17 +314,17 @@ class App(customtkinter.CTk):
     # it is called everytime the slicer is moved.
     # it repaints all the drawings made in a specific slice
     def repaint_points_drawings(self):
-        for three_d_cords in self.points_drawings_history:
+        for three_d_cords in self.points_drawings:
             if self.current_view_mode == 'Coronal' and 0 == three_d_cords[3] and self.current_slice == three_d_cords[0]:#coronal view mode
                 print("a")
-                self.canvas.create_oval(three_d_cords[1], three_d_cords[2], three_d_cords[1], three_d_cords[2], outline=self.current_color.lower(), width=2)
+                self.canvas.create_oval(three_d_cords[1], three_d_cords[2], three_d_cords[1], three_d_cords[2], outline=three_d_cords[4].lower(), width=2)
             elif self.current_view_mode == 'Sagital' and 1 == three_d_cords[3] and self.current_slice == three_d_cords[1]:#sagital view mode
                 print("b")
-                self.canvas.create_oval(three_d_cords[0], three_d_cords[2], three_d_cords[0], three_d_cords[2], outline=self.current_color.lower(), width=2)
+                self.canvas.create_oval(three_d_cords[0], three_d_cords[2], three_d_cords[0], three_d_cords[2], outline=three_d_cords[4].lower(), width=2)
             elif self.current_view_mode == 'Axial' and 2 == three_d_cords[3] and self.current_slice == three_d_cords[2]:#axial view mode
                 print("c")
-                self.canvas.create_oval(three_d_cords[0], three_d_cords[1], three_d_cords[0], three_d_cords[1], outline=self.current_color.lower(), width=2)
-            print(self.points_drawings_history)
+                self.canvas.create_oval(three_d_cords[0], three_d_cords[1], three_d_cords[0], three_d_cords[1], outline=three_d_cords[4].lower(), width=2)
+            print(self.points_drawings)
     def update_label(self, value):
         self.label.configure(text="Current Slice: {}".format(int(value)))
         self.current_slice = int(value)
@@ -356,20 +383,39 @@ class App(customtkinter.CTk):
             #print(self.current_data.shape[0])
             # I will add all the points referencing fdata to paint again the points if necesseray
             if self.current_view_mode == "Coronal":
-                self.points_drawings_history.append([self.current_slice,self.start_x,self.start_y,0])
-                self.points_drawings_translated_to_fdata_history.append([self.current_slice,self.start_y//(self.image.height()//self.current_data.shape[2]),self.start_x//(self.image.width()//self.current_data.shape[1])])
+                if self.current_color == self.foreground_color:
+                    self.points_drawings.append([self.current_slice, self.start_x, self.start_y, 0, self.foreground_color])
+                    self.points_drawings_translated_to_fdata_foreground.append([self.current_slice, self.start_y // (self.image.height() // self.current_data.shape[2]),self.start_x // (self.image.width() // self.current_data.shape[1]),self.foreground_color])
+                if self.current_color == self.background_color:
+                    self.points_drawings.append([self.current_slice, self.start_x, self.start_y, 0, self.background_color])
+                    self.points_drawings_translated_to_fdata_background.append([self.current_slice, self.start_y // (self.image.height() // self.current_data.shape[2]),self.start_x // (self.image.width() // self.current_data.shape[1]), self.background_color])
+                self.points_drawings_translated_to_fdata.append([self.current_slice,self.start_y//(self.image.height()//self.current_data.shape[2]),self.start_x//(self.image.width()//self.current_data.shape[1])])
             if self.current_view_mode == "Sagital":
-                self.points_drawings_history.append([self.start_x,self.current_slice,self.start_y,1])
-                self.points_drawings_translated_to_fdata_history.append([self.start_y//(self.image.height()//self.current_data.shape[2]),self.current_slice,self.start_x//(self.image.width()//self.current_data.shape[0])])
+                if self.current_color == self.foreground_color:
+                    self.points_drawings.append([self.start_x, self.current_slice, self.start_y, 1, self.foreground_color])
+                    self.points_drawings_translated_to_fdata_foreground.append([self.start_y // (self.image.height() // self.current_data.shape[2]), self.current_slice,self.start_x // (self.image.width() // self.current_data.shape[0]),self.foreground_color])
+                if self.current_color == self.background_color:
+                    self.points_drawings.append([self.start_x, self.current_slice, self.start_y, 1, self.background_color])
+                    self.points_drawings_translated_to_fdata_background.append([self.start_y // (self.image.height() // self.current_data.shape[2]), self.current_slice, self.start_x // (self.image.width() // self.current_data.shape[0]),self.background_color])
+                self.points_drawings_translated_to_fdata.append([self.start_y//(self.image.height()//self.current_data.shape[2]),self.current_slice,self.start_x//(self.image.width()//self.current_data.shape[0])])
             if self.current_view_mode == "Axial":
-                self.points_drawings_history.append([self.start_x,self.start_y,self.current_slice,2])
-                self.points_drawings_translated_to_fdata_history.append([round(self.start_y/round(self.image.height()/self.current_data.shape[1])),round(self.start_x/round(self.image.width()/self.current_data.shape[0])),self.current_slice])
-        print(self.points_drawings_history)
-        print(self.points_drawings_translated_to_fdata_history)
+                if self.current_color == self.foreground_color:
+                    self.points_drawings.append([self.start_x, self.start_y, self.current_slice, 2, self.foreground_color])
+                    self.points_drawings_translated_to_fdata_foreground.append([round(self.start_y / round(self.image.height() / self.current_data.shape[1])),round(self.start_x / round(self.image.width() / self.current_data.shape[0])),self.current_slice, self.foreground_color])
+                if self.current_color == self.background_color:
+                    self.points_drawings.append([self.start_x, self.start_y, self.current_slice, 2, self.background_color])
+                    self.points_drawings_translated_to_fdata_background.append([round(self.start_y / round(self.image.height() / self.current_data.shape[1])), round(self.start_x / round(self.image.width() / self.current_data.shape[0])), self.current_slice,self.background_color])
+                self.points_drawings_translated_to_fdata.append([round(self.start_y/round(self.image.height()/self.current_data.shape[1])),round(self.start_x/round(self.image.width()/self.current_data.shape[0])),self.current_slice])
+        print(self.points_drawings)
+        print(self.points_drawings_translated_to_fdata)
     def color_change_event(self,chosen_color):
         print(chosen_color)
-        self.current_color = chosen_color
-
+        if chosen_color == self.label_options_foreground_color:
+            self.current_color = self.foreground_color
+        elif chosen_color == self.label_options_background_color:
+            self.current_color = self.background_color
+        else:
+            raise Exception("Color no valid")
     def change_view_event(self, view_mode):
         print("change view event",view_mode)
         # Create figure and axes
@@ -439,8 +485,8 @@ class App(customtkinter.CTk):
         )
 
         # clean history
-        self.points_drawings_history.clear()
-        self.points_drawings_translated_to_fdata_history.clear()
+        self.points_drawings.clear()
+        self.points_drawings_translated_to_fdata.clear()
 
         img_aux = nib.load(self.file_path)
         self.current_data = img_aux.get_fdata()
@@ -552,7 +598,7 @@ class App(customtkinter.CTk):
         self.change_program_state_label("loading")
         try:
             intensity_value = int(input_value)
-            new_data = algoRegionGrowing(self.current_data, self.points_drawings_translated_to_fdata_history,intensity_value)
+            new_data = algoRegionGrowing(self.current_data, self.points_drawings_translated_to_fdata, intensity_value)
             self.current_data = new_data
             self.history_data.append(new_data)
             self.current_position_in_history += 1

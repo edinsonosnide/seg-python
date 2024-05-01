@@ -22,7 +22,6 @@ def testing(testData, functions):
             for k in range(testData.shape[2]):
                 index = np.searchsorted(sorted_testData, testData[i,j,k])
                 percentile = (index + 1) / len_sorted_testData * 100
-                percentile = percentile if 5 <= percentile <= 95 else 0
                 for func in functions:
                     if func['startPercentile'] <= percentile < func['endPercentile']:
                         standardized_data[i, j, k] = func['func'](percentile)
@@ -31,7 +30,7 @@ def testing(testData, functions):
 
 #Se crean las funciones con las que se van a transformar el testData (nuevo data)
 def training(trainData, k):
-    percentiles = np.linspace(5, 95, k) #X
+    percentiles = np.linspace(0, 100, k) #X
     y = np.percentile(trainData.flatten(), percentiles) #Y
     functions = []
 
@@ -98,5 +97,5 @@ def debug():
     plt.ylabel('Frecuencia')
     plt.grid(True)
     plt.show()
-#debug()
+debug()
 
