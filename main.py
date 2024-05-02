@@ -8,6 +8,8 @@ from PIL import ImageTk
 import nibabel as nib
 import matplotlib.pyplot as plt
 
+from edges_and_curvatures_algorithms.curvature_algo import curvature_algo
+from edges_and_curvatures_algorithms.edges_algo import edges_algo
 from filters.mean_filter import mean_filter
 from filters.median_filter import median_filter
 from segmentation_algorithms.isodata import isodataAlgo
@@ -77,8 +79,8 @@ class App(customtkinter.CTk):
 
         # create sidebar frame with widgets
         self.left_sidebar_frame = customtkinter.CTkFrame(self, width=200, corner_radius=0)
-        self.left_sidebar_frame.grid(row=0, column=0, rowspan=18, sticky="nsew")
-        self.left_sidebar_frame.grid_rowconfigure(18, weight=1)
+        self.left_sidebar_frame.grid(row=0, column=0, rowspan=22, sticky="nsew")
+        self.left_sidebar_frame.grid_rowconfigure(22, weight=1)
 
         # welcome text
         self.logo_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Welcome!", font=customtkinter.CTkFont(size=20, weight="bold"))
@@ -141,12 +143,29 @@ class App(customtkinter.CTk):
         self.run_white_stripe_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_white_stripe_std_event, text="Run White Stripe Std.")
         self.run_white_stripe_button.grid(row=15, column=0, padx=20, pady=self.my_pad_y)
 
+        # avaliable standarization alogos label
+        self.avaliable_edges_and_curvatures = customtkinter.CTkLabel(self.left_sidebar_frame, text="Edge & Curvature:",
+                                                              font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.avaliable_edges_and_curvatures.grid(row=16, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+
+        # run_edges_algo_button button
+        self.run_edges_algo_button = customtkinter.CTkButton(self.left_sidebar_frame,
+                                                               command=self.run_edges_algo_event,
+                                                               text="Run Edges Algo.")
+        self.run_edges_algo_button.grid(row=17, column=0, padx=20, pady=self.my_pad_y)
+
+        # run_curvature_algo_button button
+        self.run_curvature_algo_button = customtkinter.CTkButton(self.left_sidebar_frame,
+                                                               command=self.run_curvature_algo_event,
+                                                               text="Run Curvatures Algo.")
+        self.run_curvature_algo_button.grid(row=18, column=0, padx=20, pady=self.my_pad_y)
+
         # appareance mode label
         self.appearance_mode_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=16, column=0, padx=20, pady=10)
+        self.appearance_mode_label.grid(row=19, column=0, padx=20, pady=10)
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.left_sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=17, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+        self.appearance_mode_optionemenu.grid(row=20, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
 
 
@@ -693,6 +712,26 @@ class App(customtkinter.CTk):
         print("run_white_stripe_std_event click")
         self.change_program_state_label("loading")
         new_data = white_stripe_std(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
+
+    def run_edges_algo_event(self):
+        print("run_edges_algo_event click")
+        self.change_program_state_label("loading")
+        new_data = edges_algo(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
+
+    def run_curvature_algo_event(self):
+        print("run_curvature_algo_event")
+        self.change_program_state_label("loading")
+        new_data = curvature_algo(copy(self.current_data))
         self.current_data = new_data
         self.history_data.append(new_data)
         self.current_position_in_history += 1
