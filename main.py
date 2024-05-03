@@ -12,6 +12,7 @@ from edges_and_curvatures_algorithms.curvature_algo import curvature_algo
 from edges_and_curvatures_algorithms.edges_algo import edges_algo
 from filters.mean_filter import mean_filter
 from filters.median_filter import median_filter
+from final_algo.laplacian_coords import laplacian_coords
 from segmentation_algorithms.isodata import isodataAlgo
 from segmentation_algorithms.thresholding import algoThresholding
 from segmentation_algorithms.k_means import algoKMeans
@@ -79,8 +80,8 @@ class App(customtkinter.CTk):
 
         # create sidebar frame with widgets
         self.left_sidebar_frame = customtkinter.CTkFrame(self, width=200, corner_radius=0)
-        self.left_sidebar_frame.grid(row=0, column=0, rowspan=22, sticky="nsew")
-        self.left_sidebar_frame.grid_rowconfigure(22, weight=1)
+        self.left_sidebar_frame.grid(row=0, column=0, rowspan=23, sticky="nsew")
+        self.left_sidebar_frame.grid_rowconfigure(23, weight=1)
 
         # welcome text
         self.logo_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Welcome!", font=customtkinter.CTkFont(size=20, weight="bold"))
@@ -122,7 +123,7 @@ class App(customtkinter.CTk):
         self.run_median_filter_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_median_filter_event, text="Run Median Filter")
         self.run_median_filter_button.grid(row=10, column=0, padx=20, pady=self.my_pad_y)
 
-        # avaliable standarization alogos label
+        # avaliable standarization algos label
         self.avaliable_std_algos_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Standarization:",
                                                               font=customtkinter.CTkFont(size=20, weight="bold"))
         self.avaliable_std_algos_label.grid(row=11, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
@@ -143,7 +144,7 @@ class App(customtkinter.CTk):
         self.run_white_stripe_button = customtkinter.CTkButton(self.left_sidebar_frame, command=self.run_white_stripe_std_event, text="Run White Stripe Std.")
         self.run_white_stripe_button.grid(row=15, column=0, padx=20, pady=self.my_pad_y)
 
-        # avaliable standarization alogos label
+        # Edge & Curvature algos label
         self.avaliable_edges_and_curvatures = customtkinter.CTkLabel(self.left_sidebar_frame, text="Edge & Curvature:",
                                                               font=customtkinter.CTkFont(size=20, weight="bold"))
         self.avaliable_edges_and_curvatures.grid(row=16, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
@@ -160,12 +161,23 @@ class App(customtkinter.CTk):
                                                                text="Run Curvatures Algo.")
         self.run_curvature_algo_button.grid(row=18, column=0, padx=20, pady=self.my_pad_y)
 
+        # Edge & Curvature algos label
+        self.laplacian_coordinates_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Laplacian Coords:",
+                                                              font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.laplacian_coordinates_label.grid(row=19, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+
+        # run_laplacian_coords_button button
+        self.run_laplacian_coords_button = customtkinter.CTkButton(self.left_sidebar_frame,
+                                                               command=self.run_laplacian_coords_event,
+                                                               text="Run Laplacian Coords")
+        self.run_laplacian_coords_button.grid(row=20, column=0, padx=20, pady=self.my_pad_y)
+
         # appareance mode label
         self.appearance_mode_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=19, column=0, padx=20, pady=10)
+        self.appearance_mode_label.grid(row=21, column=0, padx=20, pady=10)
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.left_sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=20, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+        self.appearance_mode_optionemenu.grid(row=22, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
 
 
@@ -307,10 +319,10 @@ class App(customtkinter.CTk):
         mask = np.zeros_like(self.current_data, dtype=np.uint8)
 
         for x, y, z, m in self.points_drawings_translated_to_fdata_foreground:
-            mask[x][y][z] = -100
+            mask[x][y][z] = -200
 
         for x, y, z, m in self.points_drawings_translated_to_fdata_background:
-            mask[x][y][z] = -200
+            mask[x][y][z] = -100
 
         img = nib.load(self.file_path)
         final_img = nib.Nifti1Image(mask, img.affine)
@@ -732,6 +744,16 @@ class App(customtkinter.CTk):
         print("run_curvature_algo_event")
         self.change_program_state_label("loading")
         new_data = curvature_algo(copy(self.current_data))
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
+
+    def run_laplacian_coords_event(self):
+        print("run_laplacian_coords_event")
+        self.change_program_state_label("loading")
+        new_data = laplacian_coords(self.current_data)
         self.current_data = new_data
         self.history_data.append(new_data)
         self.current_position_in_history += 1
