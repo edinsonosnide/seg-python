@@ -750,6 +750,8 @@ class App(customtkinter.CTk):
         self.save_image_paint_canvas()
         self.change_program_state_label("ready")
 
+        
+
     def run_laplacian_coords_event(self):
         print("run_laplacian_coords_event")
         self.change_program_state_label("loading")
