@@ -43,8 +43,8 @@ def affine_registration_algo(data_fixed_path, data_rotated_path):
     return np_data_rotated_registered, difference
 
 # Ejemplo de uso
-imagen_fija_path = './new_data.nii.gz'
-imagen_movil_path = './new_data.nii.gz'
+imagen_fija_path = '../new_data.nii.gz'
+imagen_movil_path = '../new_data.nii.gz'
 imagen_movil_registrada, diferencia = affine_registration_algo(imagen_fija_path, imagen_movil_path)
 # Visualizar la diferencia entre la imagen móvil original y la imagen móvil registrada
 plt.imshow(imagen_movil_registrada[:,90,:], cmap='gray')
