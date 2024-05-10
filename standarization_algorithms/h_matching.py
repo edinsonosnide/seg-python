@@ -97,5 +97,5 @@ def debug():
     plt.ylabel('Frecuencia')
     plt.grid(True)
     plt.show()
-debug()
+#debug()
 
