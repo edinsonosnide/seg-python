@@ -13,6 +13,7 @@ from edges_and_curvatures_algorithms.edges_algo import edges_algo
 from filters.mean_filter import mean_filter
 from filters.median_filter import median_filter
 from final_algo.laplacian_coords import laplacian_coords
+from registration_algorithms.affine import affine_registration_algo
 from segmentation_algorithms.isodata import isodataAlgo
 from segmentation_algorithms.thresholding import algoThresholding
 from segmentation_algorithms.k_means import algoKMeans
@@ -81,7 +82,7 @@ class App(customtkinter.CTk):
         # create sidebar frame with widgets
         self.left_sidebar_frame = customtkinter.CTkFrame(self, width=200, corner_radius=0)
         self.left_sidebar_frame.grid(row=0, column=0, rowspan=23, sticky="nsew")
-        self.left_sidebar_frame.grid_rowconfigure(23, weight=1)
+        self.left_sidebar_frame.grid_rowconfigure(25, weight=1)
 
         # welcome text
         self.logo_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Welcome!", font=customtkinter.CTkFont(size=20, weight="bold"))
@@ -161,23 +162,34 @@ class App(customtkinter.CTk):
                                                                text="Run Curvatures Algo.")
         self.run_curvature_algo_button.grid(row=18, column=0, padx=20, pady=self.my_pad_y)
 
-        # Edge & Curvature algos label
+        # registration label
+        self.registration_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Registration:",
+                                                              font=customtkinter.CTkFont(size=20, weight="bold"))
+        self.registration_label.grid(row=19, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+
+        # run_afinne_registration_button
+        self.run_affine_registration_button = customtkinter.CTkButton(self.left_sidebar_frame,
+                                                               command=self.run_affine_registration_event,
+                                                               text="Run Affine Registration")
+        self.run_affine_registration_button.grid(row=20, column=0, padx=20, pady=self.my_pad_y)
+
+        # Laplacian coords label
         self.laplacian_coordinates_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Laplacian Coords:",
                                                               font=customtkinter.CTkFont(size=20, weight="bold"))
-        self.laplacian_coordinates_label.grid(row=19, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+        self.laplacian_coordinates_label.grid(row=21, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
         # run_laplacian_coords_button button
         self.run_laplacian_coords_button = customtkinter.CTkButton(self.left_sidebar_frame,
                                                                command=self.run_laplacian_coords_event,
                                                                text="Run Laplacian Coords")
-        self.run_laplacian_coords_button.grid(row=20, column=0, padx=20, pady=self.my_pad_y)
+        self.run_laplacian_coords_button.grid(row=22, column=0, padx=20, pady=self.my_pad_y)
 
         # appareance mode label
         self.appearance_mode_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=21, column=0, padx=20, pady=10)
+        self.appearance_mode_label.grid(row=23, column=0, padx=20, pady=10)
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.left_sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=22, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+        self.appearance_mode_optionemenu.grid(row=24, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
 
 
@@ -752,7 +764,16 @@ class App(customtkinter.CTk):
         self.save_image_paint_canvas()
         self.change_program_state_label("ready")
 
-        
+    def run_affine_registration_event(self):
+        print("run_affine_registration_event")
+        self.change_program_state_label("loading")
+        file_image_fixed_path = filedialog.askopenfilename(initialdir='.')
+        new_data = affine_registration_algo(data_rotated_path=self.file_path,data_fixed_path=file_image_fixed_path)
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
 
     def run_laplacian_coords_event(self):
         print("run_laplacian_coords_event")
