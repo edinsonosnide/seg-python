@@ -341,7 +341,7 @@ class App(customtkinter.CTk):
         img = nib.load(self.file_path)
         final_img = nib.Nifti1Image(mask, img.affine)
         folder_path = filedialog.askdirectory(
-            initialdir="./downloaded_files"
+            initialdir="."
         )
         nib.save(final_img, os.path.join(folder_path, 'annotations.nii.gz'))
 
@@ -353,7 +353,7 @@ class App(customtkinter.CTk):
             self.current_data = self.current_data.astype(np.uint8)
         final_img = nib.Nifti1Image(self.current_data, img.affine)
         folder_path = filedialog.askdirectory(
-            initialdir="./downloaded_files"
+            initialdir="."
         )
         nib.save(final_img, os.path.join(folder_path, 'new_data.nii.gz'))
     # it is called everytime the slicer is moved.
@@ -525,15 +525,16 @@ class App(customtkinter.CTk):
     def upload_file_and_show_first_image_event(self):
         print("upload_file_event click")
 
-        self.file_path = filedialog.askopenfilename(
-            initialdir="./"
-        )
+        self.file_path = filedialog.askopenfilename(initialdir=".")
 
         # clean history
         self.points_drawings.clear()
         self.points_drawings_translated_to_fdata.clear()
-
-        img_aux = nib.load(self.file_path)
+        #In case a file can't be opened
+        try:
+            img_aux = nib.load(self.file_path)
+        except:
+            return 0
         self.current_data = img_aux.get_fdata()
         print(self.current_data.shape)
 
@@ -718,7 +719,7 @@ class App(customtkinter.CTk):
 
     def run_h_matching_std_event(self):
         print("run_h_matching_std_event click")
-        file_path = filedialog.askopenfilename()
+        file_path = filedialog.askopenfilename(initialdir='.')
         test_new_data = None;
         try:
             test_new_data = nib.load(file_path).get_fdata()
@@ -768,7 +769,10 @@ class App(customtkinter.CTk):
         print("run_affine_registration_event")
         self.change_program_state_label("loading")
         file_image_fixed_path = filedialog.askopenfilename(initialdir='.')
-        new_data = affine_registration_algo(data_rotated_path=self.file_path,data_fixed_path=file_image_fixed_path)
+        try:
+            new_data = affine_registration_algo(data_rotated_path=self.file_path,data_fixed_path=file_image_fixed_path)
+        except:
+            return 0
         self.current_data = new_data
         self.history_data.append(new_data)
         self.current_position_in_history += 1
