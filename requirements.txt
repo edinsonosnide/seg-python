@@ -16,7 +16,6 @@ pyparsing==3.1.2
 python-dateutil==2.9.0.post0
 scipy==1.13.0
 SimpleITK==2.3.1
-SimpleITK-SimpleElastix==2.0.0rc2.dev910
 six==1.16.0
 soupsieve==2.5
 spicy==0.16.0

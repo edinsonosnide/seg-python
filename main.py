@@ -348,13 +348,13 @@ class App(customtkinter.CTk):
         for three_d_cords in self.points_drawings:
             if self.current_view_mode == 'Coronal' and 0 == three_d_cords[3] and self.current_slice == three_d_cords[0]:#coronal view mode
                 print("a")
-                self.canvas.create_oval(three_d_cords[1], three_d_cords[2], three_d_cords[1], three_d_cords[2], outline=three_d_cords[4].lower(), width=2)
+                self.canvas.create_oval(three_d_cords[1], three_d_cords[2], three_d_cords[1], three_d_cords[2], outline=three_d_cords[4].lower(), width=1)
             elif self.current_view_mode == 'Sagital' and 1 == three_d_cords[3] and self.current_slice == three_d_cords[1]:#sagital view mode
                 print("b")
-                self.canvas.create_oval(three_d_cords[0], three_d_cords[2], three_d_cords[0], three_d_cords[2], outline=three_d_cords[4].lower(), width=2)
+                self.canvas.create_oval(three_d_cords[0], three_d_cords[2], three_d_cords[0], three_d_cords[2], outline=three_d_cords[4].lower(), width=1)
             elif self.current_view_mode == 'Axial' and 2 == three_d_cords[3] and self.current_slice == three_d_cords[2]:#axial view mode
                 print("c")
-                self.canvas.create_oval(three_d_cords[0], three_d_cords[1], three_d_cords[0], three_d_cords[1], outline=three_d_cords[4].lower(), width=2)
+                self.canvas.create_oval(three_d_cords[0], three_d_cords[1], three_d_cords[0], three_d_cords[1], outline=three_d_cords[4].lower(), width=1)
             print(self.points_drawings)
     def update_label(self, value):
         self.label.configure(text="Current Slice: {}".format(int(value)))
@@ -406,7 +406,7 @@ class App(customtkinter.CTk):
         # Dibuja una línea desde las coordenadas iniciales hasta las coordenadas actuales
         if self.start_x is not None and self.start_y is not None:
             x, y = event.x, event.y
-            self.canvas.create_oval(self.start_x, self.start_y,self.start_x, self.start_y, outline=self.current_color.lower(), width=2)
+            self.canvas.create_oval(self.start_x, self.start_y,self.start_x, self.start_y, outline=self.current_color.lower(), width=1)
             self.start_x = x
             self.start_y = y
             print(self.start_x, self.start_y)
@@ -424,11 +424,11 @@ class App(customtkinter.CTk):
             if self.current_view_mode == "Sagital":
                 if self.current_color == self.foreground_color:
                     self.points_drawings.append([self.start_x, self.current_slice, self.start_y, 1, self.foreground_color])
-                    self.points_drawings_translated_to_fdata_foreground.append([self.start_y // (self.image.height() // self.current_data.shape[2]), self.current_slice,self.start_x // (self.image.width() // self.current_data.shape[0]),self.foreground_color])
+                    self.points_drawings_translated_to_fdata_foreground.append([self.start_y // (self.image.height() // self.current_data.shape[0]), self.current_slice,self.start_x // (self.image.width() // self.current_data.shape[2]),self.foreground_color])
                 if self.current_color == self.background_color:
                     self.points_drawings.append([self.start_x, self.current_slice, self.start_y, 1, self.background_color])
-                    self.points_drawings_translated_to_fdata_background.append([self.start_y // (self.image.height() // self.current_data.shape[2]), self.current_slice, self.start_x // (self.image.width() // self.current_data.shape[0]),self.background_color])
-                self.points_drawings_translated_to_fdata.append([self.start_y//(self.image.height()//self.current_data.shape[2]),self.current_slice,self.start_x//(self.image.width()//self.current_data.shape[0])])
+                    self.points_drawings_translated_to_fdata_background.append([self.start_y // (self.image.height() // self.current_data.shape[0]), self.current_slice, self.start_x // (self.image.width() // self.current_data.shape[2]),self.background_color])
+                self.points_drawings_translated_to_fdata.append([self.start_y//(self.image.height()//self.current_data.shape[0]),self.current_slice,self.start_x//(self.image.width()//self.current_data.shape[2])])
             if self.current_view_mode == "Axial":
                 if self.current_color == self.foreground_color:
                     self.points_drawings.append([self.start_x, self.start_y, self.current_slice, 2, self.foreground_color])
