@@ -309,6 +309,8 @@ class App(customtkinter.CTk):
         # clean history
         self.points_drawings.clear()
         self.points_drawings_translated_to_fdata.clear()
+        self.points_drawings_translated_to_fdata_background.clear()
+        self.points_drawings_translated_to_fdata_foreground.clear()
 
         self.update_label(self.current_slice)
 
