@@ -427,6 +427,13 @@ class App(customtkinter.CTk):
             #print("shape data:")
             #print(self.current_data.shape[0])
             # I will add all the points referencing fdata to paint again the points if necesseray
+            '''
+            1. Matrix Representation of Images:
+            In many image processing libraries and standards (like NumPy in Python, which is commonly used in scientific computing),
+            images are treated as arrays or matrices. In this representation:
+            The first index (y) corresponds to the row (vertical position).
+            The second index (x) corresponds to the column (horizontal position).
+            '''
             if self.current_view_mode == "Coronal":
                 if self.current_color == self.foreground_color:
                     self.points_drawings.append([self.current_slice, self.start_x, self.start_y, 0, self.foreground_color])
