@@ -1,170 +1,79 @@
 import numpy as np
-def laplacian_coords(inputData: np.ndarray) -> np.ndarray:
-    return inputData
+import scipy.sparse as sp
+from scipy.sparse.linalg import factorized
 
-def calculate_weights(image, beta=5.0):
-    height, width = image.shape
-    num_pixels = height * width
-    indices = np.arange(num_pixels).reshape(height, width)
-    W = np.zeros((num_pixels, num_pixels))
+def laplacian_coords(inputData: np.ndarray,seeds,labels,xB,xF,beta) -> np.ndarray:
+    # Perform segmentation on the subsampled data
+    segmented_values = segment_image_3d(inputData, seeds, labels, xB, xF, beta)
+    final_labels = apply_labels_3d(segmented_values, inputData, xB, xF)
+    return final_labels
 
-    # Primero encontrar sigma, la máxima diferencia de intensidad entre vecinos
-    sigma = 0
-    for i in range(height):
-        for j in range(width):
-            if i > 0:  # Arriba
-                sigma = max(sigma, np.abs(image[i, j] - image[i-1, j]))
-            if i < height - 1:  # Abajo
-                sigma = max(sigma, np.abs(image[i, j] - image[i+1, j]))
-            if j > 0:  # Izquierda
-                sigma = max(sigma, np.abs(image[i, j] - image[i, j-1]))
-            if j < width - 1:  # Derecha
-                sigma = max(sigma, np.abs(image[i, j] - image[i, j+1]))
+def calculate_weights_3d(image, beta=0.1):
+    depth, height, width = image.shape
+    num_voxels = depth * height * width
+    indices = np.arange(num_voxels).reshape(depth, height, width)
+    W = sp.dok_matrix((num_voxels, num_voxels))
 
-    # Asegurarse de que sigma no sea cero para evitar división por cero
+    diffs = [
+        np.abs(np.diff(image, axis=0)),
+        np.abs(np.diff(image, axis=1)),
+        np.abs(np.diff(image, axis=2))
+    ]
+    sigma = np.max([np.max(diff) for diff in diffs])
     if sigma == 0:
         sigma = 1
+    beta_scaled = -beta / (2 * sigma**2)
 
-    # Calcular los pesos con el sigma encontrado
-    for i in range(height):
-        for j in range(width):
-            index = indices[i, j]
-            if i > 0:  # Arriba
-                W[index, indices[i-1, j]] = np.exp(-beta * (np.abs(image[i, j] - image[i-1, j]) / sigma))
-            if i < height - 1:  # Abajo
-                W[index, indices[i+1, j]] = np.exp(-beta * (np.abs(image[i, j] - image[i+1, j]) / sigma))
-            if j > 0:  # Izquierda
-                W[index, indices[i, j-1]] = np.exp(-beta * (np.abs(image[i, j] - image[i, j-1]) / sigma))
-            if j < width - 1:  # Derecha
-                W[index, indices[i, j+1]] = np.exp(-beta * (np.abs(image[i, j] - image[i, j+1]) / sigma))
+    for k in range(depth):
+        for i in range(height):
+            for j in range(width):
+                index = indices[k, i, j]
+                neighbor_offsets = [(-1, 0, 0), (1, 0, 0), (0, -1, 0), (0, 1, 0), (0, 0, -1), (0, 0, 1)]
+                for dk, di, dj in neighbor_offsets:
+                    nk, ni, nj = k + dk, i + di, j + dj
+                    if 0 <= nk < depth and 0 <= ni < height and 0 <= nj < width:
+                        neighbor_index = indices[nk, ni, nj]
+                        weight = np.exp(beta_scaled * (image[k, i, j] - image[nk, ni, nj])**2)
+                        W[index, neighbor_index] = weight
 
-    return W
+    return W.tocsr()
 
-def calculate_D_from_W(W):
-    # Calcular D como la suma de cada fila de W
-    D = np.sum(W, axis=1)
-    return D
+def segment_image_3d(image, seeds, labels, xB, xF, beta):
+    depth, height, width = image.shape
+    num_voxels = depth * height * width
+    indices = np.arange(num_voxels).reshape(depth, height, width)
 
-
-import scipy.sparse as sp
-from scipy.sparse.linalg import spsolve
-
-
-def laplacian_segmentation(image, seeds, labels, xB=1, xF=0, k1=1, k2=1, k3=1, beta=5.0):
-    height, width = image.shape
-    num_pixels = height * width
-    indices = np.arange(num_pixels).reshape(height, width)
-
-    W = calculate_weights(image, beta)
-    D = calculate_D_from_W(W)
-
-    # Construir la matriz Laplaciana L
-    L = sp.diags(D) - sp.csr_matrix(W)
-
-    # Construir el vector b para las condiciones de frontera basadas en semillas
-    b = np.zeros(num_pixels)
-    for seed, label in zip(seeds, labels):
-        b[indices[seed]] = xB if label == 'B' else xF
-
-    # Solucionar el sistema lineal
-    A = k1 * sp.eye(num_pixels) + k2 * sp.eye(num_pixels) + k3 * L.dot(L)
-    x = spsolve(A, b)
-
-    # Asignar etiquetas según la regla especificada
-    segmented_image = x.reshape((height, width))
-    segmented_image = np.where(segmented_image >= (xB + xF) / 2, xB, xF)
-
-    return segmented_image
-
-
-import numpy as np
-
-
-def get_seeds_and_labels(annotations, background_value=0, foreground_value=1):
-    height, width = annotations.shape
-    seeds = []
-    labels = []
-
-    # Recorrer la matriz de anotaciones
-    for i in range(height):
-        for j in range(width):
-            if annotations[i, j] == background_value:
-                seeds.append((i, j))  # Añadir la posición como tupla
-                labels.append('B')  # 'B' para fondo
-            elif annotations[i, j] == foreground_value:
-                seeds.append((i, j))
-                labels.append('F')  # 'F' para primer plano
-
-    return seeds, labels
-
-# Ejemplo de uso:
-# annotations = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]])  # Matriz de ejemplo
-# seeds, labels = get_seeds_and_labels(annotations)
-# print("Seeds:", seeds)
-# print("Labels:", labels)
-
-
-def set_b_vector(seeds, labels, height, width, xB, xF):
-    num_pixels = height * width
-    b = np.zeros(num_pixels)
-    indices = np.arange(num_pixels).reshape(height, width)
-
-    for (i, j), label in zip(seeds, labels):
-        index = indices[i, j]
-        b[index] = xB if label == 'B' else xF
-
-    return b
-
-# Continuando el ejemplo anterior:
-# xB = 1  # Valor para el fondo
-# xF = 0  # Valor para el primer plano
-# b = set_b_vector(seeds, labels, annotations.shape[0], annotations.shape[1], xB, xF)
-# print("Vector b:", b)
-import numpy as np
-
-# Suponiendo que L es tu matriz Laplaciana y x es tu vector de valores
-def calculate_norm_squared(L, x):
-    Lx = np.dot(L, x)  # Aplicar L a x para obtener Lx
-    norm_squared = np.dot(Lx, Lx)  # Calcular (Lx)^T * Lx que es la norma cuadrada de Lx
-    return norm_squared
-
-# Ejemplo de uso
-# L = np.array([[2, -1, 0], [-1, 2, -1], [0, -1, 2]])  # Ejemplo de matriz Laplaciana
-# x = np.array([1, 2, 3])  # Vector de ejemplo
-# result = calculate_norm_squared(L, x)
-# print("Norma cuadrada de Lx:", result)
-
-
-import numpy as np
-import scipy.sparse as sp
-from scipy.sparse.linalg import spsolve, factorized
-
-
-def segment_image(image, seeds, labels, xB, xF, beta):
-    height, width = image.shape
-    num_pixels = height * width
-    indices = np.arange(num_pixels).reshape(height, width)
-
-    W = calculate_weights(image, beta)
-    D = np.sum(W, axis=1)
+    W = calculate_weights_3d(image, beta)
+    D = np.array(W.sum(axis=1)).flatten()
     L = sp.diags(D) - W
     L2 = L.dot(L)
 
-    # Preparar I_s, donde sólo los elementos de las semillas son 1
-    I_s = sp.lil_matrix((num_pixels, num_pixels))
-    b = np.zeros(num_pixels)
-    for (i, j), label in zip(seeds, labels):
-        idx = indices[i, j]
+    I_s = sp.lil_matrix((num_voxels, num_voxels))
+    b = np.zeros(num_voxels)
+    print("indices")
+    print(indices.shape)
+    print("seeds")
+    print("---")
+    #print(seeds)
+    for (k, i, j), label in zip(seeds, labels):
+        idx = indices[k, i, j]
         I_s[idx, idx] = 1
         b[idx] = xB if label == 'B' else xF
 
     A = I_s + L2
-    # Usando factorización Cholesky para resolver el sistema
-    A = sp.csr_matrix(A)
-    solve = factorized(A)  # Factorización Cholesky
+    print("Creacion del sistema")
+    A = A.tocsc()  # Convert to CSC format for factorization
+    print("Sistema convertido a csc")
+    solve = factorized(A)
+    print("Sistema factorizado")
     x = solve(b)
+    print("Sistema resuelto")
 
-    segmented_image = x.reshape((height, width))
+    segmented_image = x.reshape((depth, height, width))
     return segmented_image
 
-# Suponer que se proporcionan image, seeds, labels correctamente.
+def apply_labels_3d(segmented_values, inputData, xB, xF):
+    threshold = (xB + xF) / 2
+    # Asignar etiquetas basado en el umbral
+    labels = np.where(segmented_values >= threshold, xB, xF)
+    return labels

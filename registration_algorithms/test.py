@@ -52,13 +52,12 @@ def segment_image_3d(image, seeds, labels, xB, xF, beta):
         b[idx] = xB if label == 'B' else xF
 
     A = I_s + L2
-    print("a")
+    
     A = A.tocsc()  # Convert to CSC format for factorization
-    print("b")
+   
     solve = factorized(A)
-    print("c")
+    
     x = solve(b)
-    print("d")
 
     segmented_image = x.reshape((depth, height, width))
     return segmented_image

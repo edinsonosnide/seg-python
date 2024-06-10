@@ -1,3 +1,4 @@
+from math import floor
 import os
 from copy import copy
 from tkinter import filedialog
@@ -13,6 +14,7 @@ from edges_and_curvatures_algorithms.edges_algo import edges_algo
 from filters.mean_filter import mean_filter
 from filters.median_filter import median_filter
 from final_algo.laplacian_coords import laplacian_coords
+from final_algo.subsampling import subsampling
 from registration_algorithms.affine import affine_registration_algo
 from segmentation_algorithms.isodata import isodataAlgo
 from segmentation_algorithms.thresholding import algoThresholding
@@ -42,6 +44,7 @@ class App(customtkinter.CTk):
         self.points_drawings_translated_to_fdata = [] #translated draw points with the original matrix: [[1,2,3],[4,5,6]]
         self.points_drawings_translated_to_fdata_foreground = [] #translated draw points with the original matrix: [[1,2,3,'Red'],[4,5,6,'Red']]
         self.points_drawings_translated_to_fdata_background = [] #translated draw points with the original matrix: [[1,2,3,'Pink'],[4,5,6,'Pink']]
+        self.points_drawings_labels = []
         self.image = None
         self.inital_slice = 0
         self.current_slice = self.inital_slice
@@ -82,7 +85,7 @@ class App(customtkinter.CTk):
         # create sidebar frame with widgets
         self.left_sidebar_frame = customtkinter.CTkFrame(self, width=200, corner_radius=0)
         self.left_sidebar_frame.grid(row=0, column=0, rowspan=23, sticky="nsew")
-        self.left_sidebar_frame.grid_rowconfigure(25, weight=1)
+        self.left_sidebar_frame.grid_rowconfigure(26, weight=1)
 
         # welcome text
         self.logo_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Welcome!", font=customtkinter.CTkFont(size=20, weight="bold"))
@@ -184,12 +187,18 @@ class App(customtkinter.CTk):
                                                                text="Run Laplacian Coords")
         self.run_laplacian_coords_button.grid(row=22, column=0, padx=20, pady=self.my_pad_y)
 
+        # run_laplacian_coords_button button
+        self.run_subsampling_button = customtkinter.CTkButton(self.left_sidebar_frame,
+                                                               command=self.run_subsampling_event,
+                                                               text="Run Subsampling")
+        self.run_subsampling_button.grid(row=23, column=0, padx=20, pady=self.my_pad_y)
+
         # appareance mode label
         self.appearance_mode_label = customtkinter.CTkLabel(self.left_sidebar_frame, text="Appearance Mode:", anchor="w")
-        self.appearance_mode_label.grid(row=23, column=0, padx=20, pady=10)
+        self.appearance_mode_label.grid(row=24, column=0, padx=20, pady=10)
         self.appearance_mode_optionemenu = customtkinter.CTkOptionMenu(self.left_sidebar_frame, values=["Light", "Dark", "System"],
                                                                        command=self.change_appearance_mode_event)
-        self.appearance_mode_optionemenu.grid(row=24, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
+        self.appearance_mode_optionemenu.grid(row=25, column=0, padx=20, pady=(self.my_pad_y, self.my_pad_y))
 
 
 
@@ -361,15 +370,15 @@ class App(customtkinter.CTk):
     def repaint_points_drawings(self):
         for three_d_cords in self.points_drawings:
             if self.current_view_mode == 'Coronal' and 0 == three_d_cords[3] and self.current_slice == three_d_cords[0]:#coronal view mode
-                print("a")
+                print("Coronal")
                 self.canvas.create_oval(three_d_cords[1], three_d_cords[2], three_d_cords[1], three_d_cords[2], outline=three_d_cords[4].lower(), width=1)
             elif self.current_view_mode == 'Sagital' and 1 == three_d_cords[3] and self.current_slice == three_d_cords[1]:#sagital view mode
-                print("b")
+                print("Sagital")
                 self.canvas.create_oval(three_d_cords[0], three_d_cords[2], three_d_cords[0], three_d_cords[2], outline=three_d_cords[4].lower(), width=1)
             elif self.current_view_mode == 'Axial' and 2 == three_d_cords[3] and self.current_slice == three_d_cords[2]:#axial view mode
-                print("c")
+                print("Axial")
                 self.canvas.create_oval(three_d_cords[0], three_d_cords[1], three_d_cords[0], three_d_cords[1], outline=three_d_cords[4].lower(), width=1)
-            print(self.points_drawings)
+            #print(self.points_drawings)
     def update_label(self, value):
         self.label.configure(text="Current Slice: {}".format(int(value)))
         self.current_slice = int(value)
@@ -437,29 +446,37 @@ class App(customtkinter.CTk):
             if self.current_view_mode == "Coronal":
                 if self.current_color == self.foreground_color:
                     self.points_drawings.append([self.current_slice, self.start_x, self.start_y, 0, self.foreground_color])
-                    self.points_drawings_translated_to_fdata_foreground.append([self.current_slice, self.start_y // (self.image.height() // self.current_data.shape[2]),self.start_x // (self.image.width() // self.current_data.shape[1]),self.foreground_color])
+                    #self.points_drawings_translated_to_fdata_foreground.append([self.current_slice, self.start_y // (self.image.height() // self.current_data.shape[2]),self.start_x // (self.image.width() // self.current_data.shape[1]),self.foreground_color])
+                    self.points_drawings_labels.append('F')
                 if self.current_color == self.background_color:
                     self.points_drawings.append([self.current_slice, self.start_x, self.start_y, 0, self.background_color])
-                    self.points_drawings_translated_to_fdata_background.append([self.current_slice, self.start_y // (self.image.height() // self.current_data.shape[2]),self.start_x // (self.image.width() // self.current_data.shape[1]), self.background_color])
+                    #self.points_drawings_translated_to_fdata_background.append([self.current_slice, self.start_y // (self.image.height() // self.current_data.shape[2]),self.start_x // (self.image.width() // self.current_data.shape[1]), self.background_color])
+                    self.points_drawings_labels.append('B')
                 self.points_drawings_translated_to_fdata.append([self.current_slice,self.start_y//(self.image.height()//self.current_data.shape[2]),self.start_x//(self.image.width()//self.current_data.shape[1])])
             if self.current_view_mode == "Sagital":
                 if self.current_color == self.foreground_color:
                     self.points_drawings.append([self.start_x, self.current_slice, self.start_y, 1, self.foreground_color])
-                    self.points_drawings_translated_to_fdata_foreground.append([self.start_y // (self.image.height() // self.current_data.shape[0]), self.current_slice,self.start_x // (self.image.width() // self.current_data.shape[2]),self.foreground_color])
+                    #self.points_drawings_translated_to_fdata_foreground.append([self.start_y // (self.image.height() // self.current_data.shape[0]), self.current_slice,self.start_x // (self.image.width() // self.current_data.shape[2]),self.foreground_color])
+                    self.points_drawings_labels.append('F')
                 if self.current_color == self.background_color:
                     self.points_drawings.append([self.start_x, self.current_slice, self.start_y, 1, self.background_color])
-                    self.points_drawings_translated_to_fdata_background.append([self.start_y // (self.image.height() // self.current_data.shape[0]), self.current_slice, self.start_x // (self.image.width() // self.current_data.shape[2]),self.background_color])
+                    #self.points_drawings_translated_to_fdata_background.append([self.start_y // (self.image.height() // self.current_data.shape[0]), self.current_slice, self.start_x // (self.image.width() // self.current_data.shape[2]),self.background_color])
+                    self.points_drawings_labels.append('B')
                 self.points_drawings_translated_to_fdata.append([self.start_y//(self.image.height()//self.current_data.shape[0]),self.current_slice,self.start_x//(self.image.width()//self.current_data.shape[2])])
             if self.current_view_mode == "Axial":
                 if self.current_color == self.foreground_color:
                     self.points_drawings.append([self.start_x, self.start_y, self.current_slice, 2, self.foreground_color])
-                    self.points_drawings_translated_to_fdata_foreground.append([round(self.start_y / round(self.image.height() / self.current_data.shape[1])),round(self.start_x / round(self.image.width() / self.current_data.shape[0])),self.current_slice, self.foreground_color])
+                    #self.points_drawings_translated_to_fdata_foreground.append([round(self.start_y / round(self.image.height() / self.current_data.shape[1])),round(self.start_x / round(self.image.width() / self.current_data.shape[0])),self.current_slice, self.foreground_color])
+                    self.points_drawings_labels.append('F')
                 if self.current_color == self.background_color:
                     self.points_drawings.append([self.start_x, self.start_y, self.current_slice, 2, self.background_color])
-                    self.points_drawings_translated_to_fdata_background.append([round(self.start_y / round(self.image.height() / self.current_data.shape[1])), round(self.start_x / round(self.image.width() / self.current_data.shape[0])), self.current_slice,self.background_color])
-                self.points_drawings_translated_to_fdata.append([round(self.start_y/round(self.image.height()/self.current_data.shape[1])),round(self.start_x/round(self.image.width()/self.current_data.shape[0])),self.current_slice])
-        print(self.points_drawings)
-        print(self.points_drawings_translated_to_fdata)
+                    #self.points_drawings_translated_to_fdata_background.append([round(self.start_y / round(self.image.height() / self.current_data.shape[1])), round(self.start_x / round(self.image.width() / self.current_data.shape[0])), self.current_slice,self.background_color])
+                    self.points_drawings_labels.append('B')
+                self.points_drawings_translated_to_fdata.append([floor(self.start_y/floor(self.image.height()/self.current_data.shape[1])),floor(self.start_x/floor(self.image.width()/self.current_data.shape[0])),self.current_slice])
+        #print("Points drawings: ",self.points_drawings)
+        #print("fdata: ",self.points_drawings_translated_to_fdata)
+        #print("fdata background: ",self.points_drawings_labels)
+        #print("fdata foreground: ",self.points_drawings_labels)
     def color_change_event(self,chosen_color):
         print(chosen_color)
         if chosen_color == self.label_options_foreground_color:
@@ -789,12 +806,27 @@ class App(customtkinter.CTk):
     def run_laplacian_coords_event(self):
         print("run_laplacian_coords_event")
         self.change_program_state_label("loading")
-        new_data = laplacian_coords(self.current_data)
+        xB=1
+        xF=0
+        beta=1
+        new_data = laplacian_coords(self.current_data,self.points_drawings_translated_to_fdata,self.points_drawings_labels,xB,xF,beta)
         self.current_data = new_data
         self.history_data.append(new_data)
         self.current_position_in_history += 1
         self.save_image_paint_canvas()
         self.change_program_state_label("ready")
+        return
+
+    def run_subsampling_event(self):
+        print("run_subsampling_event")
+        self.change_program_state_label("loading")
+        new_data = subsampling(self.current_data)
+        self.current_data = new_data
+        self.history_data.append(new_data)
+        self.current_position_in_history += 1
+        self.save_image_paint_canvas()
+        self.change_program_state_label("ready")
+        return
 
 if __name__ == "__main__":
     app = App()
