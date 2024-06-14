@@ -806,9 +806,9 @@ class App(customtkinter.CTk):
     def run_laplacian_coords_event(self):
         print("run_laplacian_coords_event")
         self.change_program_state_label("loading")
-        xB=1
-        xF=0
-        beta=1
+        xB=100
+        xF=10
+        beta=0.1
         new_data = laplacian_coords(self.current_data,self.points_drawings_translated_to_fdata,self.points_drawings_labels,xB,xF,beta)
         self.current_data = new_data
         self.history_data.append(new_data)
